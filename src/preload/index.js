@@ -27,5 +27,6 @@ contextBridge.exposeInMainWorld('dt', {
     ipcRenderer.on('menu:refresh',      () => cb('refresh'));
     ipcRenderer.on('menu:expand-all',   () => cb('expand-all'));
     ipcRenderer.on('menu:collapse-all', () => cb('collapse-all'));
+    ipcRenderer.on('menu:about',        () => cb('about'));
   },
 });

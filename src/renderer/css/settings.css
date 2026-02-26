@@ -96,8 +96,11 @@
 .toggle-btn.on .toggle-thumb { transform: translateX(18px); }
 
 /* About section */
-.settings-about { text-align: center; }
-.about-logo-wrap { display: flex; justify-content: center; margin-bottom: 10px; filter: drop-shadow(0 4px 10px rgba(59,130,246,.3)); }
-.about-name    { font-size: 16px; font-weight: 700; color: var(--text); }
-.about-version { font-size: 12px; color: var(--text3); margin-top: 2px; margin-bottom: 8px; }
-.about-desc    { font-size: 12px; color: var(--text3); line-height: 1.5; }
+.settings-about { text-align: center; display: flex; flex-direction: column; align-items: center; }
+.about-logo-wrap { display: flex; justify-content: center; margin-bottom: 12px; filter: drop-shadow(0 4px 12px rgba(59,130,246,.3)); }
+.about-logo-wrap img { border-radius: 16px; }
+.about-name    { font-size: 18px; font-weight: 700; color: var(--text); }
+.about-version { font-size: 12px; color: var(--text3); margin-top: 2px; margin-bottom: 10px; }
+.about-desc    { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.about-email   { font-size: 12px; color: var(--accent); margin-top: 8px; }
+.about-license { font-size: 11px; color: var(--text3); margin-top: 4px; }

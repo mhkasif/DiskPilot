@@ -3,9 +3,11 @@ import { el } from './elements.js';
 import { saveSettings } from './persistence.js';
 import { triggerScan, cancelScan, showState } from './scan.js';
 import { renderTreemap, initTreemap } from './treemap.js';
+import { renderBarchart, initBarchart } from './barchart.js';
+import { renderPiechart, initPiechart } from './piechart.js';
 import { deleteSelected } from './fileops.js';
 import { expandAll, collapseAll, VS, rebuildRows } from './tree.js';
-import { openSettings } from './settings.js';
+import { openSettings, openAbout } from './settings.js';
 
 // ── Drive select ──────────────────────────────────────────────────────────────
 export async function loadDrives() {
@@ -32,6 +34,7 @@ export function setupToolbar() {
   el.btnScan.addEventListener('click',      () => triggerScan());
   el.btnRefresh.addEventListener('click',   () => { if (S.rootPath) triggerScan(S.rootPath); });
   el.btnStop.addEventListener('click',      cancelScan);
+  el.btnCancelScan.addEventListener('click', cancelScan);
   el.btnBrowse.addEventListener('click',    browseScan);
   el.btnStartScan.addEventListener('click', () => triggerScan());
   el.btnDelete.addEventListener('click',    deleteSelected);
@@ -46,15 +49,30 @@ export function setupToolbar() {
   });
   el.pathInput.addEventListener('keydown', e => { if (e.key === 'Enter') triggerScan(); });
 
-  // View toggle (tree ↔ treemap)
+  // View toggle – tree is default; chart buttons toggle on/off
   el.btnViewTree.addEventListener('click', () => {
-    if (S.tree) showState('tree');
+    if (S.tree) { S.currentView = 'tree'; showState('tree'); }
   });
-  el.btnViewChart.addEventListener('click', () => {
+
+  el.btnViewTreemap.addEventListener('click', () => {
     if (!S.tree) return;
-    initTreemap();
-    showState('chart');
-    renderTreemap();
+    if (S.currentView === 'treemap') { S.currentView = 'tree'; showState('tree'); return; }
+    S.currentView = 'treemap';
+    initTreemap(); showState('chart'); renderTreemap();
+  });
+
+  el.btnViewBarchart.addEventListener('click', () => {
+    if (!S.tree) return;
+    if (S.currentView === 'barchart') { S.currentView = 'tree'; showState('tree'); return; }
+    S.currentView = 'barchart';
+    initBarchart(); showState('chart'); renderBarchart();
+  });
+
+  el.btnViewPiechart.addEventListener('click', () => {
+    if (!S.tree) return;
+    if (S.currentView === 'piechart') { S.currentView = 'tree'; showState('tree'); return; }
+    S.currentView = 'piechart';
+    initPiechart(); showState('chart'); renderPiechart();
   });
 }
 
@@ -98,6 +116,7 @@ export function setupMenuListeners() {
       case 'refresh':      if (S.rootPath) triggerScan(S.rootPath); break;
       case 'expand-all':   expandAll();   break;
       case 'collapse-all': collapseAll(); break;
+      case 'about':        openAbout();   break;
     }
   });
 }

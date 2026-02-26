@@ -66,3 +66,13 @@ html.theme-dark .tb-btn.danger:hover { background: #3d1414; }
   background: var(--surface); font: inherit; font-size: 12px;
   color: var(--text); padding: 3px 6px; outline: none; cursor: pointer;
 }
+
+/* Delete button loading state */
+.tb-btn.deleting { opacity: .5; pointer-events: none; position: relative; }
+.tb-btn.deleting::after {
+  content: ''; position: absolute; inset: 0; border-radius: 7px;
+  background: repeating-linear-gradient(-45deg, transparent, transparent 4px, rgba(255,255,255,.15) 4px, rgba(255,255,255,.15) 8px);
+  background-size: 11.3px 11.3px;
+  animation: tb-delete-stripe .4s linear infinite;
+}
+@keyframes tb-delete-stripe { to { background-position: 11.3px 0; } }

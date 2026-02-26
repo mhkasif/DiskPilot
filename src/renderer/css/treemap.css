@@ -91,3 +91,53 @@ html.theme-dark .tm-t4 rect { fill: #059669; }
   background: var(--accent); border-color: var(--accent); color: #fff;
 }
 html.theme-dark .tb-btn.view-active { background: var(--accent); }
+
+/* ── Bar chart ───────────────────────────────────────────────────────────── */
+.bc-wrap {
+  padding: 12px 16px; overflow-y: auto; height: 100%;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.bc-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 8px; border-radius: 6px; transition: background .1s;
+}
+.bc-dir { cursor: pointer; }
+.bc-dir:hover { background: var(--surface2); }
+.bc-name {
+  display: flex; align-items: center; gap: 6px;
+  width: 220px; flex-shrink: 0; overflow: hidden;
+}
+.bc-icon { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; }
+.bc-icon svg { width: 16px; height: 16px; }
+.bc-t1 { color: #ef4444; } .bc-t2 { color: #f59e0b; }
+.bc-t3 { color: #3b82f6; } .bc-t4 { color: #10b981; }
+.bc-label { font-size: 13px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bc-bar-cell { flex: 1; min-width: 60px; }
+.bc-track { height: 14px; background: var(--bar-track); border-radius: 7px; overflow: hidden; }
+.bc-fill  { height: 100%; border-radius: 7px; }
+.bc-fill-t1 { background: linear-gradient(90deg,#ef4444,#f97316); }
+.bc-fill-t2 { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+.bc-fill-t3 { background: linear-gradient(90deg,#3b82f6,#60a5fa); }
+.bc-fill-t4 { background: linear-gradient(90deg,#10b981,#34d399); }
+.bc-size { font-size: 12px; color: var(--text2); width: 76px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.bc-pct  { font-size: 11px; color: var(--text3); width: 44px; text-align: right; flex-shrink: 0; }
+
+/* ── Pie / donut chart ───────────────────────────────────────────────────── */
+.pc-wrap {
+  display: flex; align-items: center; justify-content: center;
+  gap: 32px; padding: 20px; height: 100%; overflow: auto; flex-wrap: wrap;
+}
+.pc-legend {
+  display: flex; flex-direction: column; gap: 6px;
+  min-width: 200px; max-width: 320px;
+}
+.pc-legend-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 6px; border-radius: 6px; transition: background .1s; font-size: 13px;
+}
+.pc-clickable { cursor: pointer; }
+.pc-clickable:hover { background: var(--surface2); }
+.pc-dot      { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.pc-leg-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+.pc-leg-size { color: var(--text2); font-variant-numeric: tabular-nums; font-size: 12px; flex-shrink: 0; }
+.pc-leg-pct  { color: var(--text3); font-size: 11px; min-width: 40px; text-align: right; flex-shrink: 0; }

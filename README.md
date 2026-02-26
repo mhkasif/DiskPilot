@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/android-chrome-512x512.png" alt="DiskPilot Logo" width="96" height="96" />
+  <img src="assets/playstore.png" alt="DiskPilot Logo" width="96" height="96" />
 </p>
 
 <h1 align="center">DiskPilot</h1>

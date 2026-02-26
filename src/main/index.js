@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, nativeImage } = require('electron');
 const path = require('path');
 
 // Set app name early so the dock / taskbar shows "DiskPilot" not "Electron"
@@ -48,6 +48,19 @@ app.whenReady().then(() => {
   if (process.platform === 'darwin' && app.dock) {
     app.dock.setIcon(path.join(__dirname, '../../assets/playstore.png'));
   }
+
+  // Customise the About panel so it shows DiskPilot info, not Electron's
+  const appIcon = nativeImage.createFromPath(
+    path.join(__dirname, '../../assets/playstore.png')
+  );
+  app.setAboutPanelOptions({
+    applicationName   : 'DiskPilot',
+    applicationVersion: '1.0.0',
+    version           : '',
+    copyright         : 'MIT License — mhkasif97@gmail.com',
+    credits           : 'Your disk space, visualized & reclaimed.',
+    icon              : appIcon,        // macOS/Windows use nativeImage, not iconPath
+  });
 
   createWindow();
   buildMenu(mainWindow);

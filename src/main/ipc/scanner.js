@@ -58,8 +58,11 @@ async function scanNode(nodePath, sender, scanId, ctrl, seenInodes) {
       node.isDuplicate = true;
     } else {
       if (st.nlink > 1) seenInodes.add(inodeKey);
-      node.size      = st.size;
-      node.allocated = align(st.size);
+      // Use actual disk blocks (st.blocks * 512) for accurate size on APFS/HFS+.
+      // st.size is the logical size which over-reports due to clones, compression,
+      // and sparse files. Falls back to st.size on Windows where blocks is undefined.
+      node.size      = (st.blocks != null) ? st.blocks * 512 : st.size;
+      node.allocated = (st.blocks != null) ? st.blocks * 512 : align(st.size);
       node.files     = 1;
       node.ext       = path.extname(nodePath).toLowerCase().slice(1);
     }

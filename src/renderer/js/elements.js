@@ -41,7 +41,6 @@ export const el = {
   ctxMenu        : $('ctx-menu'),
   // onboarding
   onbScanBtn     : $('onb-scan-btn'),
-  onbSkipBtn     : $('onb-skip-btn'),
   btnStartScan   : $('btn-start-scan'),
   // settings
   settingsOverlay: $('settings-overlay'),
@@ -54,7 +53,9 @@ export const el = {
   tooltip        : $('tooltip'),
   // chart / treemap
   btnViewTree     : $('btn-view-tree'),
-  btnViewChart    : $('btn-view-chart'),
+  btnViewTreemap  : $('btn-view-treemap'),
+  btnViewBarchart : $('btn-view-barchart'),
+  btnViewPiechart : $('btn-view-piechart'),
   chartWrap       : $('chart-wrap'),
   chartBreadcrumb : $('chart-breadcrumb'),
   treemapContainer: $('treemap-container'),

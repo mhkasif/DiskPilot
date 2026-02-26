@@ -25,7 +25,7 @@
       "package.json"
     ],
     "mac": {
-      "icon": "assets/Assets.xcassets/AppIcon.appiconset/1024.png",
+      "icon": "assets/playstore.png",
       "category": "public.app-category.utilities",
       "target": [
         { "target": "dmg", "arch": ["universal"] }
@@ -38,7 +38,7 @@
       ]
     },
     "linux": {
-      "icon": "assets/android-chrome-512x512.png",
+      "icon": "assets/playstore.png",
       "category": "Utility",
       "target": ["AppImage", "deb"]
     }

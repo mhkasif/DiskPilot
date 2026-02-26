@@ -13,6 +13,7 @@ export const S = {
   scanId     : null,
   scanStart  : 0,
   rootPath   : null,
+  currentView: 'tree', // 'tree' | 'treemap' | 'barchart' | 'piechart'
   settings   : {
     theme      : 'auto',  // 'auto' | 'light' | 'dark'
     units      : 'auto',

@@ -43,6 +43,13 @@ export function setupSettings() {
 export function openSettings()  { el.settingsOverlay.style.display = 'flex'; }
 export function closeSettings() { el.settingsOverlay.style.display = 'none'; }
 
+export function openAbout() {
+  openSettings();
+  // Scroll the About section into view
+  const about = el.settingsOverlay.querySelector('.settings-about');
+  if (about) about.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 export function syncToggle(btn, state) {
   btn.classList.toggle('on', state);
   btn.setAttribute('aria-checked', String(state));

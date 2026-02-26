@@ -8,7 +8,7 @@ module.exports = function buildMenu(mainWindow) {
     ...(process.platform === 'darwin' ? [{
       label: 'DiskPilot',
       submenu: [
-        { role: 'about' },
+        { label: 'About DiskPilot', click: () => mainWindow && mainWindow.webContents.send('menu:about') },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },

@@ -12,6 +12,8 @@ import { setupSettings } from './settings.js';
 import { setupOnboarding } from './onboarding.js';
 import { setupTooltip } from './tooltip.js';
 import { setupTreemap } from './treemap.js';
+import { setupBarchart } from './barchart.js';
+import { setupPiechart } from './piechart.js';
 import { setupColumnResize } from './columnResize.js';
 
 async function init() {
@@ -36,16 +38,13 @@ async function init() {
   setupOnboarding();
   setupTooltip();
   setupTreemap();
+  setupBarchart();
+  setupPiechart();
   setupColumnResize();
 
-  const firstRun = !localStorage.getItem('dt-seen');
-  if (firstRun) {
-    showState('onboarding');
-  } else {
-    const saved = sessionStorage.getItem('dt-lastPath');
-    if (saved) el.pathInput.value = saved;
-    showState('empty');
-  }
+  const saved = sessionStorage.getItem('dt-lastPath');
+  if (saved) el.pathInput.value = saved;
+  showState('onboarding');
 }
 
 init().catch(console.error);

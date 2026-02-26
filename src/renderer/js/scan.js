@@ -12,12 +12,18 @@ export function showState(s) {
   el.treeWrap.style.display        = s === 'tree'       ? 'flex'    : 'none';
   el.chartWrap.style.display       = s === 'chart'      ? 'flex'    : 'none';
   el.gridHeader.style.visibility   = s === 'tree'       ? 'visible' : 'hidden';
+  // Track current view in state
+  if (s === 'tree') S.currentView = 'tree';
   // Sync view-toggle active state
-  const inView = s === 'tree' || s === 'chart';
-  el.btnViewTree.classList.toggle('view-active',  s === 'tree');
-  el.btnViewChart.classList.toggle('view-active', s === 'chart');
-  el.btnViewTree.disabled  = !inView;
-  el.btnViewChart.disabled = !inView || !S.tree;
+  const hasTree = !!S.tree;
+  el.btnViewTree    .classList.toggle('view-active', s === 'tree');
+  el.btnViewTreemap .classList.toggle('view-active', s === 'chart' && S.currentView === 'treemap');
+  el.btnViewBarchart.classList.toggle('view-active', s === 'chart' && S.currentView === 'barchart');
+  el.btnViewPiechart.classList.toggle('view-active', s === 'chart' && S.currentView === 'piechart');
+  el.btnViewTree    .disabled = !hasTree;
+  el.btnViewTreemap .disabled = !hasTree;
+  el.btnViewBarchart.disabled = !hasTree;
+  el.btnViewPiechart.disabled = !hasTree;
 }
 
 // ── Scan ──────────────────────────────────────────────────────────────────────
@@ -90,8 +96,10 @@ export function setToolbarBusy(busy) {
   el.btnCollapseAll.disabled   = busy || !S.tree;
   el.btnDelete.disabled        = busy || !S.selectedSet.size;
   el.btnShowFinder.disabled    = busy || !S.selected;
-  el.btnViewChart.disabled     = busy || !S.tree;
-  el.btnViewTree.disabled      = busy || !S.tree;
+  el.btnViewTree    .disabled = busy || !S.tree;
+  el.btnViewTreemap .disabled = busy || !S.tree;
+  el.btnViewBarchart.disabled = busy || !S.tree;
+  el.btnViewPiechart.disabled = busy || !S.tree;
 }
 
 // ── ETA / rate ────────────────────────────────────────────────────────────────
