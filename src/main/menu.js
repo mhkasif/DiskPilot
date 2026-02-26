@@ -1,5 +1,5 @@
 'use strict';
-const { Menu } = require('electron');
+const { Menu, app } = require('electron');
 
 module.exports = function buildMenu(mainWindow) {
   const send = (ch) => () => mainWindow && mainWindow.webContents.send(ch);
@@ -35,8 +35,7 @@ module.exports = function buildMenu(mainWindow) {
         { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'resetZoom' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
-        { type: 'separator' },
-        { role: 'toggleDevTools' },
+        ...(!app.isPackaged ? [{ type: 'separator' }, { role: 'toggleDevTools' }] : []),
       ],
     },
     {
