@@ -28,7 +28,7 @@
       "icon": "assets/playstore.png",
       "category": "public.app-category.utilities",
       "target": [
-        { "target": "dmg", "arch": ["universal"] }
+        { "target": "dmg", "arch": ["x64", "arm64"] }
       ]
     },
     "win": {

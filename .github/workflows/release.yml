@@ -22,14 +22,23 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build macOS DMG (universal)
+      - name: Build macOS DMG
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false   # skip code signing on CI
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:mac
+
+      - name: List dist output
+        run: ls -la dist/
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: mac-dmg
-          path: dist/*.dmg
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: warn
 
   # ── Windows ──────────────────────────────────────────────────────────────────
   build-win:
@@ -45,6 +54,8 @@ jobs:
         run: npm install
 
       - name: Build Windows installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:win
 
       - name: Upload Windows artifact
@@ -52,6 +63,7 @@ jobs:
         with:
           name: win-installer
           path: dist/*.exe
+          if-no-files-found: warn
 
   # ── Linux ────────────────────────────────────────────────────────────────────
   build-linux:
@@ -67,6 +79,8 @@ jobs:
         run: npm install
 
       - name: Build Linux packages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:linux
 
       - name: Upload Linux artifacts
@@ -76,6 +90,7 @@ jobs:
           path: |
             dist/*.AppImage
             dist/*.deb
+          if-no-files-found: warn
 
   # ── GitHub Release ───────────────────────────────────────────────────────────
   release:
@@ -88,6 +103,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Show downloaded artifacts
+        run: find artifacts -type f
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
