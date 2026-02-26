@@ -24,9 +24,8 @@ jobs:
 
       - name: Build macOS DMG
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: false   # skip code signing on CI
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build:mac
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: npm run build:mac -- --publish never
 
       - name: List dist output
         run: ls -la dist/
@@ -54,9 +53,7 @@ jobs:
         run: npm install
 
       - name: Build Windows installer
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build:win
+        run: npm run build:win -- --publish never
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -79,9 +76,7 @@ jobs:
         run: npm install
 
       - name: Build Linux packages
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run build:linux
+        run: npm run build:linux -- --publish never
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4

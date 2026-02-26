@@ -3,6 +3,10 @@
   "productName": "DiskPilot",
   "version": "1.0.0",
   "description": "DiskPilot – Disk Space Analyzer (TreeSize clone)",
+  "author": {
+    "name": "mhkasif",
+    "email": "mhkasif97@gmail.com"
+  },
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron_config_cache=/tmp/electron-cache electron .",
@@ -32,7 +36,7 @@
       ]
     },
     "win": {
-      "icon": "assets/favicon.ico",
+      "icon": "assets/playstore.png",
       "target": [
         { "target": "nsis", "arch": ["x64"] }
       ]
