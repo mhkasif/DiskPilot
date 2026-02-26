@@ -3,8 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DiskPilot – Disk Space Analyzer</title>
-  <meta name="description" content="A fast, native disk space analyzer for macOS, Windows & Linux. Visualize what's eating your storage and reclaim it." />
+  <title>DiskPilot – Free Disk Space Analyzer for Mac, Windows & Linux</title>
+  <meta name="description" content="Free, open-source disk space analyzer for macOS, Windows & Linux. Visualize storage usage, find large files, and free up disk space instantly. No account required." />
+  <meta name="keywords" content="disk space analyzer, storage cleaner, disk usage analyzer, free disk analyzer, storage management, macOS storage, Windows disk cleaner" />
+  <meta name="author" content="DiskPilot Contributors" />
+  <link rel="canonical" href="https://mhkasif.github.io/DiskPilot/" />
+  <!-- Open Graph (Facebook, LinkedIn, WhatsApp) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://mhkasif.github.io/DiskPilot/" />
+  <meta property="og:title" content="DiskPilot – Free Disk Space Analyzer for Mac, Windows & Linux" />
+  <meta property="og:description" content="Visualize what's eating your storage, find large files, and reclaim disk space instantly. Free, open-source, no account required." />
+  <meta property="og:image" content="https://mhkasif.github.io/DiskPilot/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="DiskPilot" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="DiskPilot – Free Disk Space Analyzer" />
+  <meta name="twitter:description" content="Visualize storage usage, find large files, and free up disk space. Works on macOS, Windows & Linux." />
+  <meta name="twitter:image" content="https://mhkasif.github.io/DiskPilot/og-image.png" />
+  <!-- JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DiskPilot",
+    "description": "Free disk space analyzer for macOS, Windows, and Linux",
+    "url": "https://mhkasif.github.io/DiskPilot",
+    "applicationCategory": "UtilityApplication",
+    "operatingSystem": ["macOS", "Windows", "Linux"],
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "DiskPilot Contributors"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is DiskPilot really free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, DiskPilot is 100% free and open source under the MIT license. There are no hidden costs, subscriptions, or premium tiers."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which operating systems does DiskPilot support?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "DiskPilot runs on macOS 11 and later, Windows 10 and later, and most Linux distributions. Download the DMG for Mac, EXE for Windows, or AppImage/deb for Linux."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is DiskPilot different from built-in storage tools?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "DiskPilot provides a full folder tree with size bars, interactive treemap/bar/pie chart visualizations, multi-selection, and direct file deletion — all in one fast interface."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does DiskPilot collect my data?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. DiskPilot scans your disk locally on your machine. It does not upload file names, sizes, or any personal data to external servers."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I scan external drives and USB devices?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. You can scan any mounted drive or folder — internal disks, external hard drives, USB sticks, network shares, or any accessible path."
+        }
+      }
+    ]
+  }
+  </script>
   <link rel="icon" href="favicon.ico" />
   <!-- Google Analytics -->
   <!-- Google tag (gtag.js) -->
@@ -401,6 +487,28 @@
     .footer-logo img { width: 22px; height: 22px; border-radius: 5px; }
     .footer-links { display: flex; gap: 20px; }
 
+    /* ── FAQ ── */
+    .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+    .faq-item {
+      border: 1px solid var(--border); border-radius: 12px;
+      background: var(--surface); overflow: hidden;
+      transition: border-color .2s;
+    }
+    .faq-item[open] { border-color: rgba(0,113,227,.4); }
+    .faq-item summary {
+      padding: 20px 24px; cursor: pointer; font-weight: 600; font-size: 15px;
+      list-style: none; display: flex; align-items: center; justify-content: space-between;
+      color: var(--text); transition: color .15s;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+      content: '+'; font-size: 20px; color: var(--text3); transition: transform .2s;
+    }
+    .faq-item[open] summary::after { content: '-'; }
+    .faq-item p {
+      padding: 0 24px 20px; font-size: 14px; color: var(--text2); line-height: 1.7;
+    }
+
     /* ── SCROLL REVEAL ── */
     .reveal {
       opacity: 0; transform: translateY(30px);
@@ -443,12 +551,12 @@
       <span></span> Open Source · Free Forever
     </div>
     <h1>
-      See what's eating<br/>
-      <span class="gradient-text">your disk space.</span>
+      Free disk space<br/>
+      <span class="gradient-text">analyzer app.</span>
     </h1>
     <p class="hero-sub">
-      DiskPilot scans your drive in seconds, visualizes every folder and file,
-      and lets you delete what you don't need — without ever opening Finder.
+      DiskPilot scans your entire drive in seconds, shows exactly which files and folders
+      are using the most storage, and lets you delete them instantly.
     </p>
     <div class="hero-actions">
       <a class="btn-primary" href="https://github.com/mhkasif/DiskPilot/releases" target="_blank">
@@ -574,24 +682,24 @@
 <section class="section" id="features">
   <div class="section-inner">
     <div class="section-label">Features</div>
-    <h2>Everything you need,<br/>nothing you don't.</h2>
-    <p class="section-sub">Built for speed and simplicity — no sign-ups, no subscriptions, no nonsense.</p>
+    <h2>Powerful disk analysis<br/>tools, completely free.</h2>
+    <p class="section-sub">Scan, visualize, and clean up storage on macOS, Windows, and Linux — no sign-ups, no subscriptions.</p>
 
     <div class="features-grid">
       <div class="feature-card reveal" style="animation-delay:.0s">
         <div class="feature-icon" style="background:linear-gradient(135deg,#3b82f6,#60a5fa)">⚡</div>
-        <h3>Blazing Fast Scan</h3>
-        <p>Recursively walks millions of files in seconds. Hardlink deduplication ensures byte-accurate totals — no double-counting.</p>
+        <h3>Scan Millions of Files in Seconds</h3>
+        <p>Lightning-fast recursive scan walks your entire drive. Hardlink deduplication ensures byte-accurate totals — no double-counting.</p>
       </div>
       <div class="feature-card reveal" style="animation-delay:.08s">
         <div class="feature-icon" style="background:linear-gradient(135deg,#10b981,#34d399)">🗺️</div>
-        <h3>Zoomable Treemap</h3>
-        <p>Squarified treemap instantly reveals space hogs. Scroll to zoom, drag to pan, click to drill down into any folder.</p>
+        <h3>Interactive Treemap Visualization</h3>
+        <p>Color-coded treemap shows your largest files at a glance. Scroll to zoom, drag to pan, click to drill into any folder.</p>
       </div>
       <div class="feature-card reveal" style="animation-delay:.16s">
         <div class="feature-icon" style="background:linear-gradient(135deg,#ef4444,#f97316)">🗑️</div>
-        <h3>Delete Without Leaving</h3>
-        <p>Send files and entire folders to the Trash directly from DiskPilot. Supports multi-selection and bulk delete.</p>
+        <h3>Delete Large Files Instantly</h3>
+        <p>Move files to Trash or permanently delete them directly from DiskPilot. Supports multi-selection and bulk cleanup.</p>
       </div>
       <div class="feature-card reveal" style="animation-delay:.24s">
         <div class="feature-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">🎯</div>
@@ -615,18 +723,53 @@
 <!-- ═══════════════ TREEMAP DEMO ═══════════════ -->
 <section class="section" id="how-it-works" style="padding-top:0">
   <div class="section-inner">
-    <div class="section-label">Treemap View</div>
-    <h2>See your whole drive<br/>at a glance.</h2>
-    <p class="section-sub">Color-coded by size tier. Scroll to zoom, drag to pan, click any folder to dive in.</p>
+    <div class="section-label">Visualize Disk Usage</div>
+    <h2>See your entire drive<br/>in one view.</h2>
+    <p class="section-sub">Treemap, bar chart, and pie chart views — find the biggest space hogs on your Mac, PC, or Linux machine.</p>
     <div class="treemap-demo reveal" id="treemap-demo"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ FAQ ═══════════════ -->
+<section class="section" id="faq">
+  <div class="section-inner">
+    <div class="section-label">FAQ</div>
+    <h2>Frequently asked questions</h2>
+    <p class="section-sub">Everything you need to know about DiskPilot.</p>
+    <div class="faq-list">
+      <details class="faq-item reveal">
+        <summary>Is DiskPilot really free?</summary>
+        <p>Yes, DiskPilot is 100% free and open source under the MIT license. There are no hidden costs, subscriptions, or premium tiers. You get every feature at no charge.</p>
+      </details>
+      <details class="faq-item reveal">
+        <summary>Which operating systems does DiskPilot support?</summary>
+        <p>DiskPilot runs on macOS 11 (Big Sur) and later, Windows 10 and later, and most Linux distributions. Download the DMG for Mac, EXE installer for Windows, or AppImage/deb for Linux.</p>
+      </details>
+      <details class="faq-item reveal">
+        <summary>How is DiskPilot different from built-in storage tools?</summary>
+        <p>Unlike Finder or Windows Explorer, DiskPilot gives you a full folder tree with size bars, interactive treemap/bar/pie chart visualizations, multi-selection, and the ability to delete files directly — all in one fast interface.</p>
+      </details>
+      <details class="faq-item reveal">
+        <summary>Does DiskPilot collect my data?</summary>
+        <p>No. DiskPilot scans your disk locally on your machine. It does not upload file names, sizes, or any personal data to external servers. Your files stay private.</p>
+      </details>
+      <details class="faq-item reveal">
+        <summary>Can I scan external drives and USB devices?</summary>
+        <p>Yes. You can scan any mounted drive or folder — internal disks, external hard drives, USB sticks, network shares, or any path you can access from your file system.</p>
+      </details>
+      <details class="faq-item reveal">
+        <summary>Why does the reported size differ from Finder or Windows?</summary>
+        <p>DiskPilot reports actual disk usage (allocated blocks), not logical file size. This gives you the same numbers as the "du" command and matches what your OS reports for total disk usage. Hardlink deduplication prevents double-counting shared files.</p>
+      </details>
+    </div>
   </div>
 </section>
 
 <!-- ═══════════════ CTA ═══════════════ -->
 <section class="cta-section">
   <div class="cta-glow"></div>
-  <h2>Free your disk space today.</h2>
-  <p>Open source, no account required, works offline.</p>
+  <h2>Reclaim your disk space today.</h2>
+  <p>Free, open source disk analyzer. No account needed. Works offline on Mac, Windows, and Linux.</p>
   <div class="cta-actions">
     <a class="btn-primary" href="https://github.com/mhkasif/DiskPilot/releases" target="_blank">
       ↓ Download for Free
@@ -650,7 +793,7 @@
       <a href="https://github.com/mhkasif/DiskPilot/issues" target="_blank">Issues</a>
       <a href="https://github.com/mhkasif/DiskPilot/blob/main/LICENSE" target="_blank">MIT License</a>
     </div>
-    <div>© 2025 DiskPilot Contributors</div>
+    <div>© 2025 DiskPilot — Free Disk Space Analyzer</div>
   </div>
 </footer>
 
