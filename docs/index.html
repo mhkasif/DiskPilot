@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DiskPilot – Disk Space Analyzer</title>
+  <meta name="description" content="A fast, native disk space analyzer for macOS, Windows & Linux. Visualize what's eating your storage and reclaim it." />
+  <link rel="icon" href="../assets/favicon.ico" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent : #0071e3;
+      --accent2: #34d399;
+      --bg     : #09090b;
+      --surface: #18181b;
+      --border : #27272a;
+      --text   : #f4f4f5;
+      --text2  : #a1a1aa;
+      --text3  : #71717a;
+      --radius : 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6; overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 40px; height: 60px;
+      background: rgba(9,9,11,.85);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 700; font-size: 17px; color: var(--text); text-decoration: none;
+    }
+    .nav-logo img { width: 28px; height: 28px; border-radius: 7px; }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a {
+      color: var(--text2); text-decoration: none; font-size: 14px;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px; border-radius: 8px;
+      background: var(--accent); color: #fff !important;
+      font-weight: 500; font-size: 14px; text-decoration: none;
+      transition: opacity .15s;
+    }
+    .nav-cta:hover { opacity: .88; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 100px 24px 80px;
+      position: relative; overflow: hidden;
+    }
+
+    /* animated gradient background */
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%,
+        rgba(0,113,227,.18) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 80%,
+        rgba(52,211,153,.10) 0%, transparent 60%);
+      animation: heroGlow 8s ease-in-out infinite alternate;
+    }
+    @keyframes heroGlow {
+      from { opacity: .7; }
+      to   { opacity: 1; }
+    }
+
+    /* grid overlay */
+    .hero-grid {
+      position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+    }
+
+    .hero-content { position: relative; z-index: 1; max-width: 800px; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 20px;
+      border: 1px solid rgba(0,113,227,.35);
+      background: rgba(0,113,227,.12);
+      color: #60a5fa; font-size: 13px; font-weight: 500;
+      margin-bottom: 28px;
+      animation: fadeInUp .6s ease both;
+    }
+    .hero-badge span { width: 7px; height: 7px; border-radius: 50%; background: #60a5fa; display: inline-block; animation: pulse 2s ease infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: .4; }
+    }
+
+    h1 {
+      font-size: clamp(48px, 8vw, 88px);
+      font-weight: 800; letter-spacing: -2px; line-height: 1.05;
+      margin-bottom: 24px;
+      animation: fadeInUp .7s .1s ease both;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #60a5fa 0%, #34d399 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: clamp(17px, 2.5vw, 21px); color: var(--text2);
+      max-width: 560px; margin: 0 auto 40px;
+      animation: fadeInUp .7s .2s ease both;
+    }
+
+    .hero-actions {
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      flex-wrap: wrap;
+      animation: fadeInUp .7s .3s ease both;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px; border-radius: 12px;
+      background: var(--accent); color: #fff;
+      font-weight: 600; font-size: 15px; text-decoration: none;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 0 30px rgba(0,113,227,.35);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(0,113,227,.5); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 24px; border-radius: 12px;
+      border: 1px solid var(--border); color: var(--text);
+      font-weight: 500; font-size: 15px; text-decoration: none;
+      transition: background .15s, transform .15s;
+    }
+    .btn-outline:hover { background: var(--surface); transform: translateY(-2px); }
+
+    .hero-platforms {
+      margin-top: 48px; color: var(--text3); font-size: 13px;
+      animation: fadeInUp .7s .4s ease both;
+    }
+    .platform-tags { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .platform-tag {
+      padding: 4px 12px; border-radius: 20px;
+      border: 1px solid var(--border); background: var(--surface);
+      font-size: 12px; color: var(--text2);
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── APP PREVIEW / MOCK ── */
+    .preview-section {
+      padding: 0 24px 100px; display: flex; justify-content: center;
+      position: relative;
+    }
+    .app-window {
+      width: 100%; max-width: 960px; border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #111113;
+      box-shadow: 0 40px 120px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
+      overflow: hidden;
+      animation: windowFloat 6s ease-in-out infinite alternate;
+      transform: perspective(1200px) rotateX(2deg);
+    }
+    @keyframes windowFloat {
+      from { transform: perspective(1200px) rotateX(2deg) translateY(0); }
+      to   { transform: perspective(1200px) rotateX(2deg) translateY(-8px); }
+    }
+
+    .window-titlebar {
+      height: 44px; background: #1c1c1e;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 14px; gap: 8px;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #ffbd2e; }
+    .dot-g { background: #28c840; }
+
+    .window-toolbar {
+      height: 46px; background: #1c1c1e;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 14px; gap: 8px;
+    }
+    .wt-btn {
+      height: 26px; padding: 0 12px; border-radius: 6px;
+      border: 1px solid #3a3a3c; background: #2c2c2e;
+      color: #f4f4f5; font-size: 12px; display: flex; align-items: center; gap: 5px;
+    }
+    .wt-btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .wt-path {
+      flex: 1; height: 26px; border-radius: 6px;
+      border: 1px solid #3a3a3c; background: #2c2c2e;
+      display: flex; align-items: center; padding: 0 10px;
+      font-size: 12px; color: var(--text2);
+    }
+
+    .window-header {
+      height: 28px; background: #161618;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+    }
+    .wh-cell {
+      padding: 0 10px; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .4px;
+      color: #71717a; border-right: 1px solid var(--border);
+    }
+    .wh-name  { flex: 1; }
+    .wh-bar   { width: 140px; }
+    .wh-size  { width: 80px; text-align: right; }
+    .wh-files { width: 66px; text-align: right; }
+    .wh-mtime { width: 120px; }
+
+    .window-rows { padding: 4px 0; }
+    .window-row {
+      height: 26px; display: flex; align-items: center;
+      padding: 0 0 0 8px; border-bottom: 1px solid transparent;
+      transition: background .08s;
+    }
+    .window-row:nth-child(even) { background: rgba(255,255,255,.02); }
+    .window-row.selected { background: rgba(0,113,227,.25); }
+    .wr-name {
+      flex: 1; font-size: 12.5px; color: var(--text);
+      display: flex; align-items: center; gap: 6px; overflow: hidden;
+    }
+    .wr-icon { font-size: 13px; flex-shrink: 0; }
+    .wr-indent { display: inline-block; }
+    .wr-bar   { width: 140px; padding: 0 8px; }
+    .wr-size  { width: 80px; font-size: 11.5px; color: var(--text2); text-align: right; padding-right: 8px; font-variant-numeric: tabular-nums; }
+    .wr-files { width: 66px; font-size: 11.5px; color: var(--text2); text-align: right; padding-right: 8px; }
+    .wr-mtime { width: 120px; font-size: 11px; color: var(--text3); padding-left: 4px; }
+
+    .bar-track { height: 8px; background: #2c2c2e; border-radius: 4px; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 4px; }
+    .f1 { background: linear-gradient(90deg,#ef4444,#f97316); }
+    .f2 { background: linear-gradient(90deg,#f59e0b,#fbbf24); }
+    .f3 { background: linear-gradient(90deg,#3b82f6,#60a5fa); }
+    .f4 { background: linear-gradient(90deg,#10b981,#34d399); }
+
+    /* Animated scanning row */
+    .scan-shimmer {
+      background: linear-gradient(90deg, #1c1c1e 25%, #2a2a2c 50%, #1c1c1e 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px; height: 8px;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+
+    /* ── FEATURES ── */
+    .section { padding: 100px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+
+    .section-label {
+      text-align: center; font-size: 13px; font-weight: 600;
+      letter-spacing: .6px; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 12px;
+    }
+    h2 {
+      text-align: center; font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800; letter-spacing: -1.5px;
+      margin-bottom: 16px; line-height: 1.1;
+    }
+    .section-sub {
+      text-align: center; color: var(--text2);
+      font-size: clamp(16px, 2vw, 18px); max-width: 540px;
+      margin: 0 auto 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      padding: 28px; border-radius: var(--radius);
+      border: 1px solid var(--border); background: var(--surface);
+      transition: border-color .2s, transform .2s, box-shadow .2s;
+      animation: fadeInUp .5s ease both;
+    }
+    .feature-card:hover {
+      border-color: rgba(0,113,227,.4);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 18px;
+    }
+    .feature-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--text2); line-height: 1.65; }
+
+    /* ── STATS ── */
+    .stats-section {
+      padding: 80px 24px;
+      background: linear-gradient(135deg, rgba(0,113,227,.07) 0%, rgba(52,211,153,.07) 100%);
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .stats-grid {
+      max-width: 900px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 40px; text-align: center;
+    }
+    .stat-number {
+      font-size: clamp(40px, 6vw, 64px); font-weight: 800;
+      letter-spacing: -2px; line-height: 1;
+      background: linear-gradient(135deg, #60a5fa, #34d399);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: 14px; color: var(--text2); margin-top: 8px; }
+
+    /* ── TREEMAP DEMO ── */
+    .treemap-demo {
+      width: 100%; max-width: 700px; height: 380px;
+      border-radius: 14px; overflow: hidden;
+      border: 1px solid var(--border);
+      position: relative; margin: 0 auto;
+    }
+    .tm-demo-cell {
+      position: absolute; box-sizing: border-box;
+      border: 2px solid #09090b; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 4px;
+      font-size: 13px; font-weight: 600; color: rgba(255,255,255,.9);
+      text-shadow: 0 1px 3px rgba(0,0,0,.4);
+      cursor: pointer; transition: filter .15s;
+      animation: tmFadeIn .5s ease both;
+    }
+    .tm-demo-cell:hover { filter: brightness(1.18); }
+    .tm-demo-cell span { font-size: 11px; font-weight: 400; opacity: .8; }
+    @keyframes tmFadeIn {
+      from { opacity: 0; transform: scale(.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      padding: 120px 24px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .cta-glow {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 300px; border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(0,113,227,.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-section h2 { margin-bottom: 20px; position: relative; }
+    .cta-section p { color: var(--text2); font-size: 18px; margin-bottom: 40px; position: relative; }
+    .cta-actions {
+      display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;
+      position: relative;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 24px; text-align: center;
+      color: var(--text3); font-size: 13px;
+    }
+    footer a { color: var(--text2); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+    .footer-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 700; color: var(--text2); font-size: 14px;
+    }
+    .footer-logo img { width: 22px; height: 22px; border-radius: 5px; }
+    .footer-links { display: flex; gap: 20px; }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .app-window { border-radius: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav>
+  <a class="nav-logo" href="#">
+    <img src="../assets/android-chrome-192x192.png" alt="DiskPilot" />
+    DiskPilot
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="https://github.com/mhkasif/DiskPilot" target="_blank">GitHub</a>
+    <a class="nav-cta" href="https://github.com/mhkasif/DiskPilot/releases" target="_blank">
+      ↓ Download
+    </a>
+  </div>
+</nav>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span></span> Open Source · Free Forever
+    </div>
+    <h1>
+      See what's eating<br/>
+      <span class="gradient-text">your disk space.</span>
+    </h1>
+    <p class="hero-sub">
+      DiskPilot scans your drive in seconds, visualizes every folder and file,
+      and lets you delete what you don't need — without ever opening Finder.
+    </p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="https://github.com/mhkasif/DiskPilot/releases" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 2v10M10 12l-3-3M10 12l3-3" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M3 15h14" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+        Download Free
+      </a>
+      <a class="btn-outline" href="https://github.com/mhkasif/DiskPilot" target="_blank">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.54-1.38-1.33-1.75-1.33-1.75-1.09-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.13 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.63-5.48 5.93.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+    <div class="hero-platforms">
+      Works on
+      <div class="platform-tags">
+        <span class="platform-tag">🍎 macOS 11+</span>
+        <span class="platform-tag">🪟 Windows 10+</span>
+        <span class="platform-tag">🐧 Linux</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ APP PREVIEW ═══════════════ -->
+<section class="preview-section">
+  <div class="app-window reveal">
+    <div class="window-titlebar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+    </div>
+    <div class="window-toolbar">
+      <div class="wt-btn accent">🔍 Scan</div>
+      <div class="wt-btn">↺</div>
+      <div class="wt-path">/Users/you/Documents</div>
+      <div class="wt-btn">Units ▾</div>
+      <div class="wt-btn">⬛ Tree</div>
+      <div class="wt-btn">▦ Map</div>
+    </div>
+    <div class="window-header">
+      <div class="wh-cell wh-name">Name</div>
+      <div class="wh-cell wh-bar">Size Bar</div>
+      <div class="wh-cell wh-size">Size</div>
+      <div class="wh-cell wh-files">Files</div>
+      <div class="wh-cell wh-mtime">Last Modified</div>
+    </div>
+    <div class="window-rows">
+      <div class="window-row selected">
+        <div class="wr-name"><span class="wr-icon">📁</span> Documents</div>
+        <div class="wr-bar"><div class="bar-track"><div class="bar-fill f1" style="width:82%"></div></div></div>
+        <div class="wr-size">38.4 GB</div>
+        <div class="wr-files">12,481</div>
+        <div class="wr-mtime">Today</div>
+      </div>
+      <div class="window-row">
+        <div class="wr-name"><span class="wr-icon">📁</span> <span class="wr-indent" style="padding-left:18px"></span>Projects</div>
+        <div class="wr-bar"><div class="bar-track"><div class="bar-fill f1" style="width:65%"></div></div></div>
+        <div class="wr-size">24.8 GB</div>
+        <div class="wr-files">8,302</div>
+        <div class="wr-mtime">Yesterday</div>
+      </div>
+      <div class="window-row">
+        <div class="wr-name"><span class="wr-icon">📁</span> <span class="wr-indent" style="padding-left:18px"></span>node_modules</div>
+        <div class="wr-bar"><div class="bar-track"><div class="bar-fill f2" style="width:48%"></div></div></div>
+        <div class="wr-size">18.2 GB</div>
+        <div class="wr-files">72,044</div>
+        <div class="wr-mtime">3 days ago</div>
+      </div>
+      <div class="window-row">
+        <div class="wr-name"><span class="wr-icon">📁</span> <span class="wr-indent" style="padding-left:18px"></span>Design Assets</div>
+        <div class="wr-bar"><div class="bar-track"><div class="bar-fill f3" style="width:28%"></div></div></div>
+        <div class="wr-size">10.6 GB</div>
+        <div class="wr-files">1,203</div>
+        <div class="wr-mtime">Jan 14</div>
+      </div>
+      <div class="window-row">
+        <div class="wr-name"><span class="wr-icon">📄</span> <span class="wr-indent" style="padding-left:36px"></span>brand-kit-v3.fig</div>
+        <div class="wr-bar"><div class="bar-track"><div class="bar-fill f3" style="width:18%"></div></div></div>
+        <div class="wr-size">6.8 GB</div>
+        <div class="wr-files">—</div>
+        <div class="wr-mtime">Jan 14</div>
+      </div>
+      <div class="window-row">
+        <div class="wr-name"><span class="wr-icon">📁</span> <span class="wr-indent" style="padding-left:18px"></span>Archive</div>
+        <div class="wr-bar"><div class="bar-track"><div class="bar-fill f4" style="width:12%"></div></div></div>
+        <div class="wr-size">4.6 GB</div>
+        <div class="wr-files">318</div>
+        <div class="wr-mtime">Dec 2024</div>
+      </div>
+      <div class="window-row">
+        <div class="wr-name"><span class="wr-icon">📁</span> Downloads</div>
+        <div class="wr-bar"><div class="bar-track"><div class="bar-fill f2" style="width:40%"></div></div></div>
+        <div class="wr-size">15.2 GB</div>
+        <div class="wr-files">442</div>
+        <div class="wr-mtime">Today</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ STATS ═══════════════ -->
+<section class="stats-section">
+  <div class="stats-grid reveal">
+    <div>
+      <div class="stat-number" id="stat-files">0</div>
+      <div class="stat-label">Files scanned per second</div>
+    </div>
+    <div>
+      <div class="stat-number">3</div>
+      <div class="stat-label">Platforms supported</div>
+    </div>
+    <div>
+      <div class="stat-number">0</div>
+      <div class="stat-label">Trackers or telemetry</div>
+    </div>
+    <div>
+      <div class="stat-number">100%</div>
+      <div class="stat-label">Free and open source</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FEATURES ═══════════════ -->
+<section class="section" id="features">
+  <div class="section-inner">
+    <div class="section-label">Features</div>
+    <h2>Everything you need,<br/>nothing you don't.</h2>
+    <p class="section-sub">Built for speed and simplicity — no sign-ups, no subscriptions, no nonsense.</p>
+
+    <div class="features-grid">
+      <div class="feature-card reveal" style="animation-delay:.0s">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#3b82f6,#60a5fa)">⚡</div>
+        <h3>Blazing Fast Scan</h3>
+        <p>Recursively walks millions of files in seconds. Hardlink deduplication ensures byte-accurate totals — no double-counting.</p>
+      </div>
+      <div class="feature-card reveal" style="animation-delay:.08s">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#10b981,#34d399)">🗺️</div>
+        <h3>Zoomable Treemap</h3>
+        <p>Squarified treemap instantly reveals space hogs. Scroll to zoom, drag to pan, click to drill down into any folder.</p>
+      </div>
+      <div class="feature-card reveal" style="animation-delay:.16s">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#ef4444,#f97316)">🗑️</div>
+        <h3>Delete Without Leaving</h3>
+        <p>Send files and entire folders to the Trash directly from DiskPilot. Supports multi-selection and bulk delete.</p>
+      </div>
+      <div class="feature-card reveal" style="animation-delay:.24s">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa)">🎯</div>
+        <h3>Multi-Selection</h3>
+        <p>Click, Shift+click, Ctrl+click, or Shift+Arrow to select multiple items. See combined totals and delete in one shot.</p>
+      </div>
+      <div class="feature-card reveal" style="animation-delay:.32s">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">🌗</div>
+        <h3>Dark & Light Mode</h3>
+        <p>Follows your OS appearance automatically. Or choose manually — your preference is saved across launches.</p>
+      </div>
+      <div class="feature-card reveal" style="animation-delay:.40s">
+        <div class="feature-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee)">⌨️</div>
+        <h3>Keyboard-First</h3>
+        <p>Navigate entirely from the keyboard. Arrow keys, Enter, Delete, Escape — all the shortcuts you'd expect.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ TREEMAP DEMO ═══════════════ -->
+<section class="section" id="how-it-works" style="padding-top:0">
+  <div class="section-inner">
+    <div class="section-label">Treemap View</div>
+    <h2>See your whole drive<br/>at a glance.</h2>
+    <p class="section-sub">Color-coded by size tier. Scroll to zoom, drag to pan, click any folder to dive in.</p>
+    <div class="treemap-demo reveal" id="treemap-demo"></div>
+  </div>
+</section>
+
+<!-- ═══════════════ CTA ═══════════════ -->
+<section class="cta-section">
+  <div class="cta-glow"></div>
+  <h2>Free your disk space today.</h2>
+  <p>Open source, no account required, works offline.</p>
+  <div class="cta-actions">
+    <a class="btn-primary" href="https://github.com/mhkasif/DiskPilot/releases" target="_blank">
+      ↓ Download for Free
+    </a>
+    <a class="btn-outline" href="https://github.com/mhkasif/DiskPilot" target="_blank">
+      ⭐ Star on GitHub
+    </a>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <img src="../assets/android-chrome-192x192.png" alt="" />
+      DiskPilot
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/mhkasif/DiskPilot" target="_blank">GitHub</a>
+      <a href="https://github.com/mhkasif/DiskPilot/releases" target="_blank">Releases</a>
+      <a href="https://github.com/mhkasif/DiskPilot/issues" target="_blank">Issues</a>
+      <a href="https://github.com/mhkasif/DiskPilot/blob/main/LICENSE" target="_blank">MIT License</a>
+    </div>
+    <div>© 2025 DiskPilot Contributors</div>
+  </div>
+</footer>
+
+<script>
+// ── Scroll reveal ──────────────────────────────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── Counter animation ──────────────────────────────────────────────────────────
+function animateCount(el, target, suffix = '') {
+  let start = 0;
+  const dur = 1800;
+  const step = ts => {
+    if (!start) start = ts;
+    const p = Math.min((ts - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(ease * target).toLocaleString() + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+const statsObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCount(document.getElementById('stat-files'), 4800, '+');
+      statsObs.disconnect();
+    }
+  });
+}, { threshold: 0.5 });
+statsObs.observe(document.querySelector('.stats-section'));
+
+// ── Treemap demo ───────────────────────────────────────────────────────────────
+(function buildTreemapDemo() {
+  const demo = document.getElementById('treemap-demo');
+  const W = demo.offsetWidth || 700, H = 380;
+
+  const items = [
+    { name: 'node_modules', size: 18.2, color: 'linear-gradient(135deg,#ef4444,#f97316)' },
+    { name: 'Design Assets', size: 10.6, color: 'linear-gradient(135deg,#3b82f6,#60a5fa)' },
+    { name: 'Videos', size: 8.4,  color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
+    { name: 'brand-kit.fig', size: 6.8,  color: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
+    { name: 'Archive', size: 4.6,  color: 'linear-gradient(135deg,#10b981,#34d399)' },
+    { name: 'Photos',  size: 3.2,  color: 'linear-gradient(135deg,#06b6d4,#22d3ee)' },
+    { name: 'Fonts',   size: 1.8,  color: 'linear-gradient(135deg,#ec4899,#f472b6)' },
+    { name: 'Misc',    size: 0.9,  color: 'linear-gradient(135deg,#64748b,#94a3b8)' },
+  ];
+
+  const total = items.reduce((s, i) => s + i.size, 0);
+  let x = 0;
+  items.forEach((item, idx) => {
+    const frac = item.size / total;
+    const w = W * frac;
+    const cell = document.createElement('div');
+    cell.className = 'tm-demo-cell';
+    cell.style.cssText = `left:${x}px;top:0;width:${w}px;height:${H}px;background:${item.color};animation-delay:${idx * 0.07}s`;
+    cell.innerHTML = `${item.name}<span>${item.size} GB</span>`;
+    if (w < 80) cell.innerHTML = '';
+    demo.appendChild(cell);
+    x += w;
+  });
+})();
+</script>
+</body>
+</html>

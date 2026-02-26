@@ -1,0 +1,93 @@
+/* ── Chart / Treemap view ────────────────────────────────────────────────── */
+.chart-wrap {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg);
+}
+
+/* Breadcrumb bar */
+.chart-breadcrumb {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px;
+  padding: 6px 12px; background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--text2); flex-shrink: 0; min-height: 32px;
+}
+.crumb {
+  cursor: pointer; color: var(--accent); padding: 2px 5px;
+  border-radius: 4px; white-space: nowrap;
+  transition: background .1s;
+}
+.crumb:hover { background: rgba(0,113,227,.1); }
+.crumb.current { cursor: default; color: var(--text); font-weight: 600; }
+.crumb.current:hover { background: transparent; }
+.crumb-sep { color: var(--text3); user-select: none; font-size: 13px; }
+
+/* Treemap SVG container */
+.treemap-container {
+  flex: 1; overflow: hidden; position: relative;
+}
+.treemap-container svg { display: block; }
+
+/* Cell groups */
+.tm-cell { cursor: pointer; }
+.tm-cell.is-file { cursor: default; }
+.tm-cell rect {
+  stroke: var(--bg); stroke-width: 2;
+  transition: filter .12s, opacity .12s;
+}
+.tm-cell:hover rect { filter: brightness(1.15); }
+
+/* Tier fill colours (matched to bar-t* in tree.css) */
+.tm-t1 rect { fill: #ef4444; }
+.tm-t2 rect { fill: #f59e0b; }
+.tm-t3 rect { fill: #3b82f6; }
+.tm-t4 rect { fill: #10b981; }
+
+/* Dark-mode tweaks – slightly desaturated */
+html.theme-dark .tm-t1 rect { fill: #dc2626; }
+html.theme-dark .tm-t2 rect { fill: #d97706; }
+html.theme-dark .tm-t3 rect { fill: #2563eb; }
+html.theme-dark .tm-t4 rect { fill: #059669; }
+
+/* Cell labels */
+.tm-name {
+  fill: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12.5px; font-weight: 600;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,.45);
+  dominant-baseline: middle; text-anchor: middle;
+}
+.tm-size {
+  fill: rgba(255,255,255,.82);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 11px; font-weight: 400;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  dominant-baseline: middle; text-anchor: middle;
+}
+
+/* Zoom reset button (shown when zoomed, floating top-right) */
+.tm-zoom-reset {
+  display: none;
+  position: absolute; top: 10px; right: 10px; z-index: 20;
+  align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.55); backdrop-filter: blur(8px);
+  color: #fff; font-size: 11.5px; font-weight: 500;
+  cursor: pointer; transition: background .12s;
+}
+.tm-zoom-reset:hover { background: rgba(0,0,0,.75); }
+
+/* Empty treemap message */
+.tm-empty {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--text3);
+}
+
+/* View-toggle active state in toolbar */
+.tb-btn.view-active {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+html.theme-dark .tb-btn.view-active { background: var(--accent); }

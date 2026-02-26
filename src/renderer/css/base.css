@@ -1,0 +1,22 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; overflow: hidden;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { display: flex; flex-direction: column; }
+
+/* ── Main content ────────────────────────────────────────────────────────── */
+.main-content {
+  flex: 1; overflow: hidden; position: relative;
+  display: flex; flex-direction: column; background: var(--bg);
+}
+
+/* ── Win32: hide macOS traffic-light spacer ──────────────────────────────── */
+body.win32 .traffic-light-spacer { display: none; }

@@ -1,0 +1,71 @@
+/* ── Onboarding ──────────────────────────────────────────────────────────── */
+.onboarding-screen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0; flex: 1;
+  padding: 32px 24px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,.12) 0%, transparent 60%),
+              var(--bg);
+  overflow-y: auto;
+}
+
+.onb-hero {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; margin-bottom: 36px;
+}
+.onb-logo-wrap {
+  width: 88px; height: 88px;
+  filter: drop-shadow(0 8px 24px rgba(59,130,246,.35));
+  margin-bottom: 6px;
+}
+.onb-title    { font-size: 34px; font-weight: 700; letter-spacing: -.5px; color: var(--text); }
+.onb-subtitle { font-size: 15.5px; color: var(--text2); }
+
+.onb-cards {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  justify-content: center; margin-bottom: 40px;
+  max-width: 820px;
+}
+.onb-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 26px 24px;
+  width: 240px; min-width: 200px;
+  box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; text-align: center;
+  transition: transform .18s, box-shadow .18s;
+}
+.onb-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+.onb-card-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+.onb-card-icon svg { width: 26px; height: 26px; }
+
+.onb-card h3 { font-size: 15px; font-weight: 600; color: var(--text); }
+.onb-card p  { font-size: 12.5px; color: var(--text2); line-height: 1.5; }
+
+.onb-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+.onb-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 28px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: #fff; font: inherit; font-size: 15px; font-weight: 600;
+  cursor: pointer; letter-spacing: -.2px;
+  box-shadow: 0 4px 16px rgba(99,102,241,.4);
+  transition: transform .15s, box-shadow .15s, opacity .15s;
+}
+.onb-cta svg { width: 16px; height: 16px; }
+.onb-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(99,102,241,.5); }
+.onb-cta:active { transform: none; opacity: .9; }
+
+.onb-skip {
+  background: none; border: none; color: var(--text3);
+  font: inherit; font-size: 12.5px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.onb-skip:hover { color: var(--text2); }

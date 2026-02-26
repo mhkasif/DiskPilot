@@ -1,0 +1,20 @@
+/* ── Context menu ────────────────────────────────────────────────────────── */
+.ctx-menu {
+  position: fixed; z-index: 9000;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 5px 0;
+  box-shadow: var(--shadow-lg); min-width: 200px;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.ctx-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 14px; font-size: 13px; cursor: pointer;
+  color: var(--text); transition: background .07s;
+}
+.ctx-item svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--text2); }
+.ctx-item:hover { background: var(--accent); color: #fff; }
+.ctx-item:hover svg { color: #fff; }
+.ctx-item.ctx-danger { color: var(--danger); }
+.ctx-item.ctx-danger svg { color: var(--danger); }
+.ctx-item.ctx-danger:hover { background: var(--danger); color: #fff; }
+.ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
