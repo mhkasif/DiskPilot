@@ -1,0 +1,13 @@
+{
+  "name": "diskpilot",
+  "version": "1.0.0",
+  "description": "DiskPilot – Disk Space Analyzer (TreeSize clone)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron_config_cache=/tmp/electron-cache electron .",
+    "start:win": "set electron_config_cache=C:\\Temp\\electron-cache&& electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
