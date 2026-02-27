@@ -517,10 +517,36 @@
     .reveal.visible { opacity: 1; transform: translateY(0); }
 
     /* ── RESPONSIVE ── */
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       nav { padding: 0 20px; }
-      .nav-links { display: none; }
-      .app-window { border-radius: 10px; }
+      .nav-links a:not(.nav-cta) { display: none; }
+
+      .hero { padding: 90px 20px 60px; }
+      h1 { letter-spacing: -1px; }
+
+      .preview-section { padding: 0 0 60px; overflow-x: auto; }
+      .app-window {
+        min-width: 640px; border-radius: 10px;
+        transform: none; animation: none;
+      }
+
+      .stats-grid { gap: 24px; }
+
+      .treemap-demo { height: 260px; }
+
+      .section { padding: 60px 20px; }
+
+      .cta-section { padding: 80px 20px; }
+
+      .footer-inner { flex-direction: column; align-items: center; text-align: center; }
+      .footer-links { flex-wrap: wrap; justify-content: center; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn-primary, .btn-outline { justify-content: center; }
+      .treemap-demo { height: 220px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -793,7 +819,7 @@
       <a href="https://github.com/mhkasif/DiskPilot/issues" target="_blank">Issues</a>
       <a href="https://github.com/mhkasif/DiskPilot/blob/main/LICENSE" target="_blank">MIT License</a>
     </div>
-    <div>© 2025 DiskPilot — Free Disk Space Analyzer</div>
+    <div>© <span id="footer-year">2025</span> DiskPilot — Free Disk Space Analyzer</div>
   </div>
 </footer>
 
@@ -831,33 +857,53 @@ statsObs.observe(document.querySelector('.stats-section'));
 // ── Treemap demo ───────────────────────────────────────────────────────────────
 (function buildTreemapDemo() {
   const demo = document.getElementById('treemap-demo');
-  const W = demo.offsetWidth || 700, H = 380;
-
   const items = [
     { name: 'node_modules', size: 18.2, color: 'linear-gradient(135deg,#ef4444,#f97316)' },
     { name: 'Design Assets', size: 10.6, color: 'linear-gradient(135deg,#3b82f6,#60a5fa)' },
-    { name: 'Videos', size: 8.4,  color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
+    { name: 'Videos',        size: 8.4,  color: 'linear-gradient(135deg,#8b5cf6,#a78bfa)' },
     { name: 'brand-kit.fig', size: 6.8,  color: 'linear-gradient(135deg,#f59e0b,#fbbf24)' },
-    { name: 'Archive', size: 4.6,  color: 'linear-gradient(135deg,#10b981,#34d399)' },
-    { name: 'Photos',  size: 3.2,  color: 'linear-gradient(135deg,#06b6d4,#22d3ee)' },
-    { name: 'Fonts',   size: 1.8,  color: 'linear-gradient(135deg,#ec4899,#f472b6)' },
-    { name: 'Misc',    size: 0.9,  color: 'linear-gradient(135deg,#64748b,#94a3b8)' },
+    { name: 'Archive',       size: 4.6,  color: 'linear-gradient(135deg,#10b981,#34d399)' },
+    { name: 'Photos',        size: 3.2,  color: 'linear-gradient(135deg,#06b6d4,#22d3ee)' },
+    { name: 'Fonts',         size: 1.8,  color: 'linear-gradient(135deg,#ec4899,#f472b6)' },
+    { name: 'Misc',          size: 0.9,  color: 'linear-gradient(135deg,#64748b,#94a3b8)' },
   ];
 
-  const total = items.reduce((s, i) => s + i.size, 0);
-  let x = 0;
-  items.forEach((item, idx) => {
-    const frac = item.size / total;
-    const w = W * frac;
-    const cell = document.createElement('div');
-    cell.className = 'tm-demo-cell';
-    cell.style.cssText = `left:${x}px;top:0;width:${w}px;height:${H}px;background:${item.color};animation-delay:${idx * 0.07}s`;
-    cell.innerHTML = `${item.name}<span>${item.size} GB</span>`;
-    if (w < 80) cell.innerHTML = '';
-    demo.appendChild(cell);
-    x += w;
-  });
+  function build() {
+    demo.innerHTML = '';
+    const W = demo.offsetWidth || 700;
+    const H = demo.offsetHeight || 380;
+
+    // Split into 2 rows: top 3 big items, bottom 5 smaller
+    const row1 = items.slice(0, 3);
+    const row2 = items.slice(3);
+    const row1Sum = row1.reduce((s, i) => s + i.size, 0);
+    const row2Sum = row2.reduce((s, i) => s + i.size, 0);
+    const total   = row1Sum + row2Sum;
+    const splitY  = Math.round(H * (row1Sum / total));
+
+    function renderRow(rowItems, rowSum, yStart, rowH) {
+      let x = 0;
+      rowItems.forEach((item, idx) => {
+        const w = Math.round(W * (item.size / rowSum));
+        const cell = document.createElement('div');
+        cell.className = 'tm-demo-cell';
+        cell.style.cssText = `left:${x}px;top:${yStart}px;width:${w}px;height:${rowH}px;background:${item.color};animation-delay:${idx * 0.07}s`;
+        if (w >= 55) cell.innerHTML = `${item.name}<span>${item.size} GB</span>`;
+        demo.appendChild(cell);
+        x += w;
+      });
+    }
+
+    renderRow(row1, row1Sum, 0,      splitY);
+    renderRow(row2, row2Sum, splitY, H - splitY);
+  }
+
+  build();
+  window.addEventListener('resize', build);
 })();
+
+// ── Dynamic year ───────────────────────────────────────────────────────────────
+document.getElementById('footer-year').textContent = new Date().getFullYear();
 </script>
 </body>
 </html>
