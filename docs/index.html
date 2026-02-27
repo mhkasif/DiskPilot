@@ -265,17 +265,18 @@
       position: relative;
     }
     .app-window {
-      width: 100%; max-width: 960px; border-radius: 14px;
+      --preview-scale: 1;
+      width: 100%; max-width: 960px; min-width: 640px; border-radius: 14px;
       border: 1px solid var(--border);
       background: #111113;
       box-shadow: 0 40px 120px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.04);
       overflow: hidden;
       animation: windowFloat 6s ease-in-out infinite alternate;
-      transform: perspective(1200px) rotateX(2deg);
+      transform: scale(var(--preview-scale)) perspective(1200px) rotateX(2deg);
     }
     @keyframes windowFloat {
-      from { transform: perspective(1200px) rotateX(2deg) translateY(0); }
-      to   { transform: perspective(1200px) rotateX(2deg) translateY(-8px); }
+      from { transform: scale(var(--preview-scale)) perspective(1200px) rotateX(2deg) translateY(0); }
+      to   { transform: scale(var(--preview-scale)) perspective(1200px) rotateX(2deg) translateY(-8px); }
     }
 
     .window-titlebar {
@@ -297,13 +298,15 @@
       height: 26px; padding: 0 12px; border-radius: 6px;
       border: 1px solid #3a3a3c; background: #2c2c2e;
       color: #f4f4f5; font-size: 12px; display: flex; align-items: center; gap: 5px;
+      flex-shrink: 0; white-space: nowrap;
     }
     .wt-btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; }
     .wt-path {
-      flex: 1; height: 26px; border-radius: 6px;
+      flex: 1; min-width: 0; height: 26px; border-radius: 6px;
       border: 1px solid #3a3a3c; background: #2c2c2e;
       display: flex; align-items: center; padding: 0 10px;
       font-size: 12px; color: var(--text2);
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
     }
 
     .window-header {
@@ -417,9 +420,10 @@
       gap: 40px; text-align: center;
     }
     .stat-number {
+      display: inline-block;
       font-size: clamp(40px, 6vw, 64px); font-weight: 800;
       letter-spacing: -1px; line-height: 1.1;
-      padding: 0 10px;
+      padding: 0 .15em;
       background: linear-gradient(135deg, #60a5fa, #34d399);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -906,15 +910,16 @@ statsObs.observe(document.querySelector('.stats-section'));
 
   function update() {
     const available = section.clientWidth - 48;
-    const natural   = win.scrollWidth;
+    // natural width is at least min-width (640px)
+    const natural   = Math.max(win.scrollWidth, 640);
     if (available >= natural) {
-      win.style.transform    = '';
+      win.style.setProperty('--preview-scale', '1');
       win.style.marginBottom = '';
     } else {
       const scale = available / natural;
-      win.style.transform    = `scale(${scale})`;
+      win.style.setProperty('--preview-scale', scale);
       // collapse the empty space left by the shrunken element
-      win.style.marginBottom = `-${win.scrollHeight * (1 - scale)}px`;
+      win.style.marginBottom = `-${win.offsetHeight * (1 - scale)}px`;
     }
   }
 
