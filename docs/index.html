@@ -517,6 +517,9 @@
     .reveal.visible { opacity: 1; transform: translateY(0); }
 
     /* ── RESPONSIVE ── */
+    .preview-section { overflow: hidden; }
+    .app-window { transform-origin: top center; }
+
     @media (max-width: 768px) {
       nav { padding: 0 20px; }
       .nav-links a:not(.nav-cta) { display: none; }
@@ -524,18 +527,9 @@
       .hero { padding: 90px 20px 60px; }
       h1 { letter-spacing: -1px; }
 
-      .preview-section { padding: 0 0 60px; overflow-x: auto; }
-      .app-window {
-        min-width: 640px; border-radius: 10px;
-        transform: none; animation: none;
-      }
-
       .stats-grid { gap: 24px; }
-
       .treemap-demo { height: 260px; }
-
       .section { padding: 60px 20px; }
-
       .cta-section { padding: 80px 20px; }
 
       .footer-inner { flex-direction: column; align-items: center; text-align: center; }
@@ -900,6 +894,30 @@ statsObs.observe(document.querySelector('.stats-section'));
 
   build();
   window.addEventListener('resize', build);
+})();
+
+// ── Scale app window preview to fit without scrolling ──────────────────────────
+(function scalePreview() {
+  const section = document.querySelector('.preview-section');
+  const win     = document.querySelector('.app-window');
+  if (!section || !win) return;
+
+  function update() {
+    const available = section.clientWidth - 48;
+    const natural   = win.scrollWidth;
+    if (available >= natural) {
+      win.style.transform    = '';
+      win.style.marginBottom = '';
+    } else {
+      const scale = available / natural;
+      win.style.transform    = `scale(${scale})`;
+      // collapse the empty space left by the shrunken element
+      win.style.marginBottom = `-${win.scrollHeight * (1 - scale)}px`;
+    }
+  }
+
+  update();
+  window.addEventListener('resize', update);
 })();
 
 // ── Dynamic year ───────────────────────────────────────────────────────────────
