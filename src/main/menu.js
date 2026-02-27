@@ -1,5 +1,6 @@
 'use strict';
 const { Menu, BrowserWindow, app } = require('electron');
+const { checkForUpdatesManually } = require('./updater');
 
 module.exports = function buildMenu() {
   // Always resolve the current window at click-time so we never hold a stale ref
@@ -14,6 +15,7 @@ module.exports = function buildMenu() {
       label: 'DiskPilot',
       submenu: [
         { label: 'About DiskPilot', click: send('menu:about') },
+        { label: 'Check for Updates…', click: () => checkForUpdatesManually() },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
@@ -53,6 +55,16 @@ module.exports = function buildMenu() {
     {
       role: 'window',
       submenu: [{ role: 'minimize' }, { role: 'zoom' }],
+    },
+    {
+      label: 'Help',
+      submenu: [
+        { label: 'Check for Updates…', click: () => checkForUpdatesManually() },
+        ...(process.platform !== 'darwin' ? [
+          { type: 'separator' },
+          { label: 'About DiskPilot', click: send('menu:about') },
+        ] : []),
+      ],
     },
   ];
 

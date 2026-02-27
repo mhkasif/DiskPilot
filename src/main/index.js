@@ -9,6 +9,7 @@ const buildMenu          = require('./menu');
 const registerFilesystem = require('./ipc/filesystem');
 const registerScanner    = require('./ipc/scanner');
 const registerFileops    = require('./ipc/fileops');
+const setupAutoUpdater   = require('./updater');
 
 let mainWindow;
 
@@ -67,6 +68,7 @@ app.whenReady().then(() => {
   registerFilesystem();
   registerScanner();
   registerFileops();
+  setupAutoUpdater();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

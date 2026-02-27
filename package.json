@@ -20,6 +20,11 @@
     "appId": "com.diskpilot.app",
     "productName": "DiskPilot",
     "copyright": "Copyright © 2025 DiskPilot Contributors",
+    "publish": {
+      "provider": "github",
+      "owner": "mhkasif",
+      "repo": "DiskPilot"
+    },
     "directories": {
       "output": "dist"
     },
@@ -32,7 +37,8 @@
       "icon": "assets/playstore.png",
       "category": "public.app-category.utilities",
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
       ]
     },
     "win": {
@@ -46,6 +52,9 @@
       "category": "Utility",
       "target": ["AppImage", "deb"]
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0"
   },
   "devDependencies": {
     "electron": "^33.0.0",
