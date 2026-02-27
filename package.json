@@ -1,7 +1,7 @@
 {
   "name": "diskpilot",
   "productName": "DiskPilot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "DiskPilot – Disk Space Analyzer (TreeSize clone)",
   "author": {
     "name": "mhkasif",
