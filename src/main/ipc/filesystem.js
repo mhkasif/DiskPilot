@@ -1,9 +1,9 @@
 'use strict';
 const fs   = require('fs');
 const os   = require('os');
-const { ipcMain, dialog } = require('electron');
+const { ipcMain, dialog, BrowserWindow } = require('electron');
 
-module.exports = function registerFilesystemIpc(mainWindow) {
+module.exports = function registerFilesystemIpc() {
   ipcMain.handle('fs:drives', async () => {
     if (process.platform === 'win32') {
       const drives = [];
@@ -27,7 +27,8 @@ module.exports = function registerFilesystemIpc(mainWindow) {
   ipcMain.handle('fs:homeDir', () => os.homedir());
 
   ipcMain.handle('fs:selectDir', async () => {
-    const res = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory'] });
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    const res = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
     return res.canceled ? null : res.filePaths[0];
   });
 

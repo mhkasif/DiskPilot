@@ -1,14 +1,19 @@
 'use strict';
-const { Menu, app } = require('electron');
+const { Menu, BrowserWindow, app } = require('electron');
 
-module.exports = function buildMenu(mainWindow) {
-  const send = (ch) => () => mainWindow && mainWindow.webContents.send(ch);
+module.exports = function buildMenu() {
+  // Always resolve the current window at click-time so we never hold a stale ref
+  const getWin = () => BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+  const send = (ch) => () => {
+    const win = getWin();
+    if (win && !win.isDestroyed()) win.webContents.send(ch);
+  };
 
   const template = [
     ...(process.platform === 'darwin' ? [{
       label: 'DiskPilot',
       submenu: [
-        { label: 'About DiskPilot', click: () => mainWindow && mainWindow.webContents.send('menu:about') },
+        { label: 'About DiskPilot', click: send('menu:about') },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },

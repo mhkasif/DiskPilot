@@ -1,15 +1,16 @@
 'use strict';
 const fs   = require('fs');
 const path = require('path');
-const { ipcMain, dialog, shell, clipboard } = require('electron');
+const { ipcMain, dialog, shell, clipboard, BrowserWindow } = require('electron');
 
-module.exports = function registerFileopIpc(mainWindow) {
+module.exports = function registerFileopIpc() {
   ipcMain.handle('fs:delete', async (_, itemPath) => {
     const name  = path.basename(itemPath);
     let   isDir = false;
     try { isDir = fs.lstatSync(itemPath).isDirectory(); } catch (_) {}
 
-    const { response } = await dialog.showMessageBox(mainWindow, {
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    const { response } = await dialog.showMessageBox(win, {
       type     : 'warning',
       title    : 'Confirm Delete',
       message  : `Delete "${name}"?`,

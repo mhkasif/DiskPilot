@@ -63,10 +63,10 @@ app.whenReady().then(() => {
   });
 
   createWindow();
-  buildMenu(mainWindow);
-  registerFilesystem(mainWindow);
+  buildMenu();
+  registerFilesystem();
   registerScanner();
-  registerFileops(mainWindow);
+  registerFileops();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
