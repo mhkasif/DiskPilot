@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, nativeImage } = require('electron');
+const { app, BrowserWindow, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 
 // Set app name early so the dock / taskbar shows "DiskPilot" not "Electron"
@@ -43,6 +43,9 @@ function createWindow() {
 }
 
 // ─── App lifecycle ────────────────────────────────────────────────────────────
+
+// ─── Version IPC (sync) ───────────────────────────────────────────────────────
+ipcMain.on('app:version', (e) => { e.returnValue = app.getVersion(); });
 
 app.whenReady().then(() => {
   // Set macOS dock icon explicitly (BrowserWindow.icon is ignored on macOS)

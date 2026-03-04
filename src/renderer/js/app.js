@@ -20,6 +20,10 @@ async function init() {
   loadSettings();
   applyTheme(S.settings.theme);
 
+  // Set dynamic version in the About section
+  const aboutVer = document.getElementById('about-version');
+  if (aboutVer) aboutVer.textContent = `Version ${window.dt.appVersion || ''}`;
+
   if (window.dt.platform === 'win32') {
     document.body.classList.add('win32');
     const sif = el.ctxMenu.querySelector('[data-action="showInDir"]');

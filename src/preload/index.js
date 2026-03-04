@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('dt', {
   // ── platform ───────────────────────────────────────────────────────────────
   platform: process.platform,
+  appVersion: ipcRenderer.sendSync('app:version'),
 
   // ── filesystem ────────────────────────────────────────────────────────────
   getDrives    : ()  => ipcRenderer.invoke('fs:drives'),
