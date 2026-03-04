@@ -107,7 +107,18 @@ function setupAutoUpdater() {
         cancelId: 1,
       })
       .then(({ response }) => {
-        if (response === 0) autoUpdater.quitAndInstall();
+        if (response === 0) {
+          try {
+            // isSilent = false, isForceRunAfter = true
+            autoUpdater.quitAndInstall(false, true);
+          } catch (err) {
+            console.error('[updater] quitAndInstall failed:', err);
+            // Fallback: open releases page if auto-install fails (unsigned macOS apps)
+            const { shell } = require('electron');
+            shell.openExternal(`https://github.com/mhkasif/DiskPilot/releases/tag/v${info.version}`);
+            app.quit();
+          }
+        }
       });
   });
 
