@@ -41,3 +41,64 @@
 .scan-eta  { font-size: 11.5px; color: var(--text3); min-height: 16px; }
 .progress-track { width: 320px; height: 4px; background: var(--bar-track); border-radius: 2px; overflow: hidden; }
 .progress-bar   { height: 100%; background: var(--accent); border-radius: 2px; transition: width .35s ease; }
+
+/* ── Update overlay ───────────────────────────────────────────────────── */
+.update-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+  animation: fadeIn .25s ease;
+}
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+.update-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px 40px;
+  text-align: center;
+  min-width: 340px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  animation: scaleIn .3s ease;
+}
+@keyframes scaleIn { from { transform: scale(.92); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+
+.update-spinner {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 3.5px solid var(--bar-track);
+  border-top-color: var(--accent);
+  animation: spin .75s linear infinite;
+  margin: 0 auto 16px;
+}
+.update-spinner.done {
+  border-color: #22c55e;
+  border-top-color: #22c55e;
+  animation: none;
+}
+.update-title {
+  font-size: 16px; font-weight: 600;
+  color: var(--text); margin: 0 0 6px;
+}
+.update-detail {
+  font-size: 12.5px; color: var(--text3);
+  margin: 0 0 18px;
+}
+.update-progress-track {
+  width: 100%; height: 6px;
+  background: var(--bar-track);
+  border-radius: 3px; overflow: hidden;
+}
+.update-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #60a5fa);
+  border-radius: 3px;
+  transition: width .3s ease;
+}
+.update-percent {
+  display: block; margin-top: 10px;
+  font-size: 13px; font-weight: 600;
+  color: var(--accent);
+}

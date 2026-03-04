@@ -1,25 +1,30 @@
 'use strict';
-const { app, dialog, BrowserWindow } = require('electron');
+const { app, dialog, shell, BrowserWindow } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
 const getWin = () =>
   BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+
+// Send update events to the renderer
+function sendToRenderer(channel, data) {
+  const win = getWin();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send(channel, data);
+  }
+}
 
 let manualCheck = false;
 
 function setupAutoUpdater() {
   if (!app.isPackaged) return;
 
-  // Enable logging so update issues are visible in the console
-  autoUpdater.logger = require('electron').app.isPackaged
-    ? {
-        info:  (...args) => console.log('[updater]', ...args),
-        warn:  (...args) => console.warn('[updater]', ...args),
-        error: (...args) => console.error('[updater]', ...args),
-        debug: (...args) => console.log('[updater:debug]', ...args),
-      }
-    : console;
-  autoUpdater.logger.transports = undefined; // suppress electron-log fallback
+  autoUpdater.logger = {
+    info:  (...args) => console.log('[updater]', ...args),
+    warn:  (...args) => console.warn('[updater]', ...args),
+    error: (...args) => console.error('[updater]', ...args),
+    debug: (...args) => console.log('[updater:debug]', ...args),
+  };
+  autoUpdater.logger.transports = undefined;
 
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -30,6 +35,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('[updater] Error:', err?.message || String(err));
+    sendToRenderer('update:error', { message: err?.message || String(err) });
     if (manualCheck) {
       const win = getWin();
       if (win && !win.isDestroyed()) {
@@ -61,7 +67,10 @@ function setupAutoUpdater() {
         cancelId: 1,
       })
       .then(({ response }) => {
-        if (response === 0) autoUpdater.downloadUpdate();
+        if (response === 0) {
+          sendToRenderer('update:downloading', { version: info.version, percent: 0 });
+          autoUpdater.downloadUpdate();
+        }
       });
   });
 
@@ -85,6 +94,12 @@ function setupAutoUpdater() {
     if (win && !win.isDestroyed()) {
       win.setProgressBar(progress.percent / 100);
     }
+    sendToRenderer('update:progress', {
+      percent: Math.round(progress.percent),
+      transferred: progress.transferred,
+      total: progress.total,
+      bytesPerSecond: progress.bytesPerSecond,
+    });
     console.log(`[updater] Download progress: ${Math.round(progress.percent)}%`);
   });
 
@@ -92,34 +107,39 @@ function setupAutoUpdater() {
     console.log('[updater] Update downloaded:', info.version);
     const win = getWin();
     if (win && !win.isDestroyed()) {
-      win.setProgressBar(-1); // remove progress bar
+      win.setProgressBar(-1);
     }
-    if (!win || win.isDestroyed()) return;
+    sendToRenderer('update:downloaded', { version: info.version });
 
-    dialog
-      .showMessageBox(win, {
-        type: 'info',
-        title: 'Update Ready',
-        message: `DiskPilot v${info.version} has been downloaded`,
-        detail: 'The update will be installed when you restart. Restart now?',
-        buttons: ['Restart Now', 'Later'],
-        defaultId: 0,
-        cancelId: 1,
-      })
-      .then(({ response }) => {
-        if (response === 0) {
-          try {
-            // isSilent = false, isForceRunAfter = true
-            autoUpdater.quitAndInstall(false, true);
-          } catch (err) {
-            console.error('[updater] quitAndInstall failed:', err);
-            // Fallback: open releases page if auto-install fails (unsigned macOS apps)
-            const { shell } = require('electron');
+    // Wait a moment for the renderer to show the "downloaded" state
+    setTimeout(() => {
+      const w = getWin();
+      if (!w || w.isDestroyed()) return;
+
+      dialog
+        .showMessageBox(w, {
+          type: 'info',
+          title: 'Update Ready',
+          message: `DiskPilot v${info.version} has been downloaded`,
+          detail: 'Restart now to apply the update?',
+          buttons: ['Restart Now', 'Download Manually', 'Later'],
+          defaultId: 0,
+          cancelId: 2,
+        })
+        .then(({ response }) => {
+          if (response === 0) {
+            try {
+              autoUpdater.quitAndInstall(false, true);
+            } catch (err) {
+              console.error('[updater] quitAndInstall failed:', err);
+              shell.openExternal(`https://github.com/mhkasif/DiskPilot/releases/tag/v${info.version}`);
+              app.quit();
+            }
+          } else if (response === 1) {
             shell.openExternal(`https://github.com/mhkasif/DiskPilot/releases/tag/v${info.version}`);
-            app.quit();
           }
-        }
-      });
+        });
+    }, 500);
   });
 
   // Delayed auto-check so the window can finish loading first

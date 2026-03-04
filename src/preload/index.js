@@ -31,4 +31,10 @@ contextBridge.exposeInMainWorld('dt', {
     ipcRenderer.on('menu:collapse-all', () => cb('collapse-all'));
     ipcRenderer.on('menu:about',        () => cb('about'));
   },
+
+  // ── update events ───────────────────────────────────────────────────────
+  onUpdateDownloading: (cb) => ipcRenderer.on('update:downloading', (_, d) => cb(d)),
+  onUpdateProgress:    (cb) => ipcRenderer.on('update:progress',    (_, d) => cb(d)),
+  onUpdateDownloaded:  (cb) => ipcRenderer.on('update:downloaded',  (_, d) => cb(d)),
+  onUpdateError:       (cb) => ipcRenderer.on('update:error',       (_, d) => cb(d)),
 });
