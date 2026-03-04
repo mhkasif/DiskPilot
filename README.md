@@ -109,18 +109,16 @@ Available formats:
 
 1. Download the `.dmg` file from Releases
 2. Open the `.dmg` and drag **DiskPilot** to your **Applications** folder
-3. **Important:** Since the app is not code-signed, macOS will show
-   _"DiskPilot.app is damaged"_. Fix this by running:
+3. **First launch:** Since the app is not notarized, macOS will warn you. To
+   open it:
+   - **Right-click** (or Control+click) on DiskPilot in Applications
+   - Click **"Open"** from the menu
+   - Click **"Open"** again in the dialog
+   - After this one-time step, it opens normally every time
+4. If you still see _"is damaged"_, run this in Terminal:
    ```bash
    xattr -cr /Applications/DiskPilot.app
    ```
-4. Open DiskPilot from Applications
-
-> **Tip:** You can do steps 2–4 in one go:
->
-> ```bash
-> cp -R /Volumes/DiskPilot*/DiskPilot.app /Applications/ && xattr -cr /Applications/DiskPilot.app && open /Applications/DiskPilot.app
-> ```
 
 **Windows**
 
