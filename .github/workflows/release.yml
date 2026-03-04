@@ -63,3 +63,36 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:linux -- --publish always
+
+  # ── Release Notes ────────────────────────────────────────────────────────────
+  release-notes:
+    needs: [build-mac, build-win, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update Release with Notes
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: DiskPilot ${{ github.ref_name }}
+          body: |
+            ## DiskPilot ${{ github.ref_name }}
+
+            Your disk space, visualized & reclaimed.
+
+            ### Downloads
+            | Platform | File |
+            |----------|------|
+            | macOS (Apple Silicon + Intel) | `DiskPilot-*.dmg` |
+            | Windows 64-bit | `DiskPilot-*.exe` |
+            | Linux AppImage | `DiskPilot-*.AppImage` |
+            | Linux Debian | `DiskPilot-*.deb` |
+
+            ### Install
+            - **macOS**: Open the `.dmg`, drag DiskPilot to Applications
+            - **Windows**: Run the `.exe` installer
+            - **Linux**: `chmod +x DiskPilot-*.AppImage && ./DiskPilot-*.AppImage`
+
+            ---
+            📧 mhkasif97@gmail.com
+          draft: false
+          prerelease: false
