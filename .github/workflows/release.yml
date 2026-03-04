@@ -109,7 +109,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
           name: DiskPilot ${{ github.ref_name }}
+          update: true
           body: |
             ## DiskPilot ${{ github.ref_name }}
 
