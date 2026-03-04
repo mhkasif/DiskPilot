@@ -5,8 +5,18 @@
 <h1 align="center">DiskPilot</h1>
 
 <p align="center">
-  A fast, native disk space analyzer for macOS, Windows, and Linux.<br/>
-  Visualize what's eating your storage — and reclaim it.
+  <b>Free Cross-Platform Disk Space Analyzer</b><br/>
+  macOS • Windows • Linux<br/><br/>
+  Visualize what’s eating your storage — and reclaim it.
+</p>
+
+<p align="center">
+  Built by <b>Haseeb (MHKASIF)</b>
+</p>
+
+<p align="center">
+  <a href="https://mhkasif.github.io/DiskPilot/">🌐 Official Website</a> •
+  <a href="https://github.com/mhkasif/DiskPilot/releases">⬇ Download</a>
 </p>
 
 <p align="center">
@@ -17,19 +27,55 @@
 
 ---
 
-## Features
+## What is DiskPilot?
 
-- **Deep disk scan** — recursively walks any folder in seconds, counting real sizes with hardlink deduplication so numbers are accurate
-- **Tree view** — sortable columns (size, allocated, files, folders, last modified) with a virtual scroller that handles millions of rows without lag
-- **Treemap view** — squarified treemap for instant visual identification of space hogs; click to drill down, breadcrumb to navigate back
-- **Multi-selection** — click, Shift+click, Ctrl/Cmd+click, Shift+Arrow to select multiple items; bulk delete
-- **Column resizing** — drag column edges to resize; widths persist across sessions
-- **Delete to Trash** — send files and folders directly to the system Trash from inside the app
-- **Scan rate & elapsed time** — live scan speed (GB/s) and elapsed time shown during scanning
-- **Dark / Light / Auto theme** — follows your OS preference or can be set manually
-- **Keyboard-first navigation** — arrow keys, Enter, Backspace/Delete, all the expected shortcuts
-- **Context menu** — Open, Show in Finder/Explorer, Copy Path, Delete
-- **Cross-platform** — macOS (Intel + Apple Silicon universal), Windows x64, Linux AppImage/deb
+DiskPilot is a fast, native-feeling disk space analyzer for:
+
+- macOS (Intel + Apple Silicon)  
+- Windows x64  
+- Linux (AppImage + .deb)  
+
+It scans any directory, calculates real file sizes (with hardlink deduplication), and visualizes storage usage through a powerful tree view and treemap.
+
+No cloud.  
+No tracking.  
+No subscriptions.  
+Just a fast, free storage analysis tool.
+
+---
+
+## Why DiskPilot?
+
+Most operating systems show abstract storage bars — but don’t tell you exactly *where* your space is going.
+
+DiskPilot gives you:
+
+- Precise folder-level disk usage  
+- Visual treemap for instant space hog detection  
+- Accurate size calculation (no double-counting hardlinks)  
+- High performance even with millions of files  
+- Native experience across Windows, macOS, and Linux  
+
+---
+
+## Features – What Makes DiskPilot Powerful
+
+- Deep disk scan — recursively walks any folder in seconds  
+- Hardlink deduplication — accurate real disk usage calculation  
+- Tree view — sortable columns: Size, Allocated, Files, Folders, Last Modified  
+- Virtual scrolling — handles millions of rows without lag  
+- Treemap view — squarified treemap layout  
+  - Click to drill down  
+  - Breadcrumb navigation  
+- Multi-selection: Click, Shift+Click, Ctrl/Cmd+Click, Shift+Arrow  
+- Bulk delete  
+- Delete to Trash — safe removal via system Trash  
+- Column resizing — widths persist across sessions  
+- Live scan rate (GB/s) + elapsed time  
+- Dark / Light / Auto theme  
+- Keyboard-first navigation  
+- Native context menu: Open, Show in Finder/Explorer, Copy Path, Delete  
+- Cross-platform builds: macOS Universal (.dmg), Windows NSIS installer, Linux AppImage + .deb  
 
 ---
 
@@ -40,107 +86,143 @@
 | ![Screenshot 1](screenshots/s1.png) | ![Screenshot 2](screenshots/s3.png) |
 | ![Screenshot 3](screenshots/s4.png) | ![Screenshot 4](screenshots/s5.png) |
 
+---
+
+## Download
+
+Prebuilt binaries are available in the Releases section:
+
+https://github.com/mhkasif/DiskPilot/releases
+
+Available formats:
+
+- macOS Universal `.dmg`  
+- Windows x64 `.exe`  
+- Linux AppImage  
+- Linux `.deb`  
 
 ---
 
-## Getting Started
+## Getting Started (Development)
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18 or later
-- npm 9 or later
+- Node.js 18+  
+- npm 9+  
 
-### Install & Run (development)
+### Clone & Run
 
-```bash
-git clone https://github.com/mhkasif/DiskPilot.git
-cd DiskPilot
-npm install
-npm start
-```
+Clone the repository, install dependencies, and run the app:
 
-> **Note:** In development the dock/taskbar shows "Electron" because the app runs inside the Electron binary. Build the app (see below) to see "DiskPilot" everywhere.
+`git clone https://github.com/mhkasif/DiskPilot.git`  
+`cd DiskPilot`  
+`npm install`  
+`npm start`  
+
+> Note: In development mode, the dock/taskbar shows "Electron" because the app runs inside the Electron binary. Build the app to see "DiskPilot" everywhere.
 
 ---
 
-## Building
+### Building
 
-Install dependencies first if you haven't already:
+Install dependencies first:
 
-```bash
-npm install
-```
+`npm install`
 
 | Command | Output |
 |---|---|
 | `npm run build:mac` | Universal `.dmg` for macOS |
-| `npm run build:win` | NSIS installer for Windows x64 |
-| `npm run build:linux` | AppImage + `.deb` for Linux |
-| `npm run build` | Build for the current platform |
+| `npm run build:win` | NSIS installer for Windows |
+| `npm run build:linux` | AppImage + `.deb` |
+| `npm run build` | Build for current platform |
 
-Distributable files are written to the `dist/` folder.
+Distributables are written to the `dist/` folder.
 
 ---
 
-## Project Structure
+### Project Structure
 
 ```
 diskpilot/
-├── assets/                    # App icons
+├── assets/
 ├── src/
-│   ├── main/                  # Electron main process
-│   │   ├── index.js           # Window creation, app lifecycle
-│   │   ├── menu.js            # Native application menu
+│   ├── main/
+│   │   ├── index.js
+│   │   ├── menu.js
 │   │   └── ipc/
-│   │       ├── filesystem.js  # Drive list, home dir, directory picker
-│   │       ├── scanner.js     # Recursive scan with hardlink dedup
-│   │       └── fileops.js     # Delete, open, show in Finder/Explorer
+│   │       ├── filesystem.js
+│   │       ├── scanner.js
+│   │       └── fileops.js
 │   ├── preload/
-│   │   └── index.js           # contextBridge API surface
+│   │   └── index.js
 │   └── renderer/
 │       ├── index.html
-│       ├── css/               # Per-concern stylesheets (no bundler)
-│       └── js/                # ES modules (no bundler)
-│           ├── app.js         # Entry point
-│           ├── tree.js        # Virtual-scrolled tree view
-│           ├── treemap.js     # Squarify treemap
-│           ├── scan.js        # Scan orchestration & state
+│       ├── css/
+│       └── js/
+│           ├── app.js
+│           ├── tree.js
+│           ├── treemap.js
+│           ├── scan.js
 │           └── ...
 └── package.json
 ```
 
 ---
 
-## Keyboard Shortcuts
+### Keyboard Shortcuts
 
 | Key | Action |
 |---|---|
-| `↑` / `↓` | Navigate rows |
-| `Shift+↑` / `Shift+↓` | Extend selection |
-| `→` | Expand folder / enter first child |
-| `←` | Collapse folder / jump to parent |
-| `Enter` | Expand folder or open file |
-| `Backspace` / `Delete` | Delete selected item(s) |
-| `Cmd/Ctrl + Click` | Toggle item in selection |
-| `Shift + Click` | Range select |
-| `Escape` | Close context menu |
-| `Cmd+O` (macOS) / `Ctrl+O` (Win/Linux) | Scan directory |
-| `F5` | Refresh current scan |
+| ↑ / ↓ | Navigate rows |
+| Shift+↑ / Shift+↓ | Extend selection |
+| → | Expand folder / enter first child |
+| ← | Collapse folder / go to parent |
+| Enter | Expand folder or open file |
+| Backspace / Delete | Delete selected item(s) |
+| Cmd/Ctrl + Click | Toggle selection |
+| Shift + Click | Range select |
+| Escape | Close context menu |
+| Cmd+O (macOS) / Ctrl+O (Win/Linux) | Scan directory |
+| F5 | Refresh current scan |
 
 ---
 
-## Contributing
+### Contributing
 
-Contributions are welcome! Please open an issue to discuss what you'd like to change before submitting a pull request.
+Contributions are welcome:
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m 'Add my feature'`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
+1. Fork the repository  
+2. Create a branch: `git checkout -b feature/my-feature`  
+3. Commit changes: `git commit -m "Add my feature"`  
+4. Push branch: `git push origin feature/my-feature`  
+5. Open a Pull Request  
+
+Please open an issue first for significant changes.
 
 ---
 
-## License
+### Roadmap
 
-MIT — see [LICENSE](LICENSE) for details.
+- File type filtering  
+- Search within scan results  
+- Export scan reports (CSV / JSON)  
+- Performance improvements for network drives  
+
+---
+
+### License
+
+MIT — see LICENSE file for details.
+
+---
+
+### About the Author
+
+DiskPilot is built and maintained by **Haseeb (MHKASIF)**  
+Full Stack Engineer & Product Builder  
+
+Portfolio: https://mhkasif.github.io  
+LinkedIn: https://www.linkedin.com/in/mhkasif97/  
+
+If you find DiskPilot useful, consider starring the repository ⭐
+
