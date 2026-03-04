@@ -10,10 +10,26 @@ let manualCheck = false;
 function setupAutoUpdater() {
   if (!app.isPackaged) return;
 
+  // Enable logging so update issues are visible in the console
+  autoUpdater.logger = require('electron').app.isPackaged
+    ? {
+        info:  (...args) => console.log('[updater]', ...args),
+        warn:  (...args) => console.warn('[updater]', ...args),
+        error: (...args) => console.error('[updater]', ...args),
+        debug: (...args) => console.log('[updater:debug]', ...args),
+      }
+    : console;
+  autoUpdater.logger.transports = undefined; // suppress electron-log fallback
+
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[updater] Checking for update…');
+  });
+
   autoUpdater.on('error', (err) => {
+    console.error('[updater] Error:', err?.message || String(err));
     if (manualCheck) {
       const win = getWin();
       if (win && !win.isDestroyed()) {
@@ -29,6 +45,7 @@ function setupAutoUpdater() {
   });
 
   autoUpdater.on('update-available', (info) => {
+    console.log('[updater] Update available:', info.version);
     manualCheck = false;
     const win = getWin();
     if (!win || win.isDestroyed()) return;
@@ -48,7 +65,8 @@ function setupAutoUpdater() {
       });
   });
 
-  autoUpdater.on('update-not-available', () => {
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('[updater] No update available. Latest:', info?.version);
     if (manualCheck) {
       const win = getWin();
       if (win && !win.isDestroyed()) {
@@ -62,8 +80,20 @@ function setupAutoUpdater() {
     manualCheck = false;
   });
 
-  autoUpdater.on('update-downloaded', (info) => {
+  autoUpdater.on('download-progress', (progress) => {
     const win = getWin();
+    if (win && !win.isDestroyed()) {
+      win.setProgressBar(progress.percent / 100);
+    }
+    console.log(`[updater] Download progress: ${Math.round(progress.percent)}%`);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('[updater] Update downloaded:', info.version);
+    const win = getWin();
+    if (win && !win.isDestroyed()) {
+      win.setProgressBar(-1); // remove progress bar
+    }
     if (!win || win.isDestroyed()) return;
 
     dialog
@@ -83,8 +113,11 @@ function setupAutoUpdater() {
 
   // Delayed auto-check so the window can finish loading first
   setTimeout(() => {
+    console.log('[updater] Auto-checking for updates (app version:', app.getVersion(), ')');
     manualCheck = false;
-    autoUpdater.checkForUpdates().catch(() => {});
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.error('[updater] Auto-check failed:', err?.message || String(err));
+    });
   }, 5000);
 }
 
@@ -101,7 +134,10 @@ function checkForUpdatesManually() {
     return;
   }
   manualCheck = true;
-  autoUpdater.checkForUpdates().catch(() => {});
+  console.log('[updater] Manual check for updates (app version:', app.getVersion(), ')');
+  autoUpdater.checkForUpdates().catch((err) => {
+    console.error('[updater] Manual check failed:', err?.message || String(err));
+  });
 }
 
 module.exports = setupAutoUpdater;

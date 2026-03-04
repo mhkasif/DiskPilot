@@ -3,7 +3,7 @@ name: Build & Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 permissions:
   contents: write
@@ -22,23 +22,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build macOS DMG
+      - name: Build & Publish macOS
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npm run build:mac -- --publish never
-
-      - name: List dist output
-        run: ls -la dist/
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-dmg
-          path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/latest-mac.yml
-          if-no-files-found: warn
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build:mac -- --publish always
 
   # ── Windows ──────────────────────────────────────────────────────────────────
   build-win:
@@ -53,17 +41,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Windows installer
-        run: npm run build:win -- --publish never
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: win-installer
-          path: |
-            dist/*.exe
-            dist/latest.yml
-          if-no-files-found: warn
+      - name: Build & Publish Windows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build:win -- --publish always
 
   # ── Linux ────────────────────────────────────────────────────────────────────
   build-linux:
@@ -78,60 +59,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Linux packages
-        run: npm run build:linux -- --publish never
-
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-packages
-          path: |
-            dist/*.AppImage
-            dist/*.deb
-            dist/latest-linux.yml
-          if-no-files-found: warn
-
-  # ── GitHub Release ───────────────────────────────────────────────────────────
-  release:
-    needs: [build-mac, build-win, build-linux]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Show downloaded artifacts
-        run: find artifacts -type f
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: DiskPilot ${{ github.ref_name }}
-          update: true
-          body: |
-            ## DiskPilot ${{ github.ref_name }}
-
-            Your disk space, visualized & reclaimed.
-
-            ### Downloads
-            | Platform | File |
-            |----------|------|
-            | macOS (Apple Silicon + Intel) | `DiskPilot-*.dmg` |
-            | Windows 64-bit | `DiskPilot-*.exe` |
-            | Linux AppImage | `DiskPilot-*.AppImage` |
-            | Linux Debian | `DiskPilot-*.deb` |
-
-            ### Install
-            - **macOS**: Open the `.dmg`, drag DiskPilot to Applications
-            - **Windows**: Run the `.exe` installer
-            - **Linux**: `chmod +x DiskPilot-*.AppImage && ./DiskPilot-*.AppImage`
-
-            ---
-            📧 mhkasif97@gmail.com
-          files: artifacts/**/*
-          draft: false
-          prerelease: false
+      - name: Build & Publish Linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run build:linux -- --publish always
