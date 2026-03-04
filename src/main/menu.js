@@ -42,7 +42,6 @@ module.exports = function buildMenu() {
         { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'resetZoom' },
         { type: 'separator' },
         { role: 'togglefullscreen' },
-        ...(!app.isPackaged ? [{ type: 'separator' }, { role: 'toggleDevTools' }] : []),
       ],
     },
     {

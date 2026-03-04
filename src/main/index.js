@@ -56,7 +56,7 @@ app.whenReady().then(() => {
   );
   app.setAboutPanelOptions({
     applicationName   : 'DiskPilot',
-    applicationVersion: '1.1.0',
+    applicationVersion: '1.0.1',
     version           : '',
     copyright         : 'MIT License — mhkasif97@gmail.com',
     credits           : 'Your disk space, visualized & reclaimed.',

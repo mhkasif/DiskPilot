@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('dt', {
 
   // ── file operations ───────────────────────────────────────────────────────
   deleteItem   : (p) => ipcRenderer.invoke('fs:delete', p),
+  deleteItems  : (paths) => ipcRenderer.invoke('fs:deleteBatch', paths),
   openItem     : (p) => ipcRenderer.invoke('fs:open', p),
   showInDir    : (p) => ipcRenderer.invoke('fs:showInDir', p),
   copyPath     : (p) => ipcRenderer.invoke('fs:copyPath', p),

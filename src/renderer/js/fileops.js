@@ -12,22 +12,17 @@ export async function deleteSelected() {
   el.btnDelete.classList.add('deleting');
   flashStatus('Deleting…');
 
-  let lastError    = null;
-  let deletedCount = 0;
+  let lastError = null;
 
-  for (const p of paths) {
-    try {
-      const res = await window.dt.deleteItem(p);
-      if (!res.ok) {
-        if (!res.cancelled && res.error) lastError = res.error;
-        continue;
-      }
-      removeFromTree(p);
-      deletedCount++;
-    } catch (err) {
-      lastError = err.message || 'Unknown error';
-    }
+  const res = await window.dt.deleteItems(paths);
+  if (res.cancelled) {
+    el.btnDelete.classList.remove('deleting');
+    el.btnDelete.disabled = false;
+    return;
   }
+  for (const p of res.deletedPaths || []) removeFromTree(p);
+  if (res.errors?.length) lastError = res.errors.map(e => e.error).join('; ');
+  const deletedCount = (res.deletedPaths || []).length;
 
   // ── Clear selection & refresh list ──────────────────────────────────────
   S.selectedSet.clear();
