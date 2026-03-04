@@ -69,30 +69,49 @@ jobs:
     needs: [build-mac, build-win, build-linux]
     runs-on: ubuntu-latest
     steps:
-      - name: Update Release with Notes
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: DiskPilot ${{ github.ref_name }}
-          body: |
-            ## DiskPilot ${{ github.ref_name }}
+      - uses: actions/checkout@v4
 
-            Your disk space, visualized & reclaimed.
+      - name: Wait for release to exist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "Waiting for release with tag $TAG ..."
+          for i in $(seq 1 30); do
+            if gh release view "$TAG" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+              echo "Release found!"
+              break
+            fi
+            echo "Attempt $i — release not found yet, waiting 10s ..."
+            sleep 10
+          done
 
-            ### Downloads
-            | Platform | File |
-            |----------|------|
-            | macOS (Apple Silicon + Intel) | `DiskPilot-*.dmg` |
-            | Windows 64-bit | `DiskPilot-*.exe` |
-            | Linux AppImage | `DiskPilot-*.AppImage` |
-            | Linux Debian | `DiskPilot-*.deb` |
+      - name: Update release with notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          gh release edit "$TAG" \
+            --repo "${{ github.repository }}" \
+            --title "DiskPilot $TAG" \
+            --draft=false \
+            --latest \
+            --notes "## DiskPilot $TAG
 
-            ### Install
-            - **macOS**: Open the `.dmg`, drag DiskPilot to Applications
-            - **Windows**: Run the `.exe` installer
-            - **Linux**: `chmod +x DiskPilot-*.AppImage && ./DiskPilot-*.AppImage`
+          Your disk space, visualized & reclaimed.
 
-            ---
-            📧 mhkasif97@gmail.com
-          draft: false
-          prerelease: false
+          ### Downloads
+          | Platform | File |
+          |----------|------|
+          | macOS (Apple Silicon + Intel) | \`DiskPilot-*.dmg\` |
+          | Windows 64-bit | \`DiskPilot-*.exe\` |
+          | Linux AppImage | \`DiskPilot-*.AppImage\` |
+          | Linux Debian | \`DiskPilot-*.deb\` |
+
+          ### Install
+          - **macOS**: Open the \`.dmg\`, drag DiskPilot to Applications
+          - **Windows**: Run the \`.exe\` installer
+          - **Linux**: \`chmod +x DiskPilot-*.AppImage && ./DiskPilot-*.AppImage\`
+
+          ---
+          📧 mhkasif97@gmail.com"
