@@ -24,6 +24,10 @@ export function showState(s) {
   el.btnViewTreemap .disabled = !hasTree;
   el.btnViewBarchart.disabled = !hasTree;
   el.btnViewPiechart.disabled = !hasTree;
+
+  if (s === 'chart' || s === 'tree') {
+    window.dt.trackEvent('view_change', { view: s === 'chart' ? S.currentView : 'tree' });
+  }
 }
 
 // ── Scan ──────────────────────────────────────────────────────────────────────
@@ -61,6 +65,8 @@ export async function triggerScan(dirPath) {
   S.scanId   = null;
   setToolbarBusy(false);
 
+  window.dt.trackEvent('scan_start', { path: p });
+
   if (!result.ok) {
     updateStatusBar(result.cancelled ? 'Scan cancelled.' : `Error: ${result.error || 'Unknown'}`);
     showState(S.tree ? 'tree' : 'empty');
@@ -77,6 +83,13 @@ export async function triggerScan(dirPath) {
 
   const elapsed = ((Date.now() - S.scanStart) / 1000).toFixed(1);
   updateStatusBar('Scan complete', p, S.tree.size, S.tree.files, S.tree.folders, elapsed);
+
+  window.dt.trackEvent('scan_complete', {
+    path: p,
+    size: S.tree.size,
+    files: S.tree.files,
+    elapsed_seconds: elapsed
+  });
 }
 
 export function cancelScan() {

@@ -37,4 +37,7 @@ contextBridge.exposeInMainWorld('dt', {
   onUpdateProgress:    (cb) => ipcRenderer.on('update:progress',    (_, d) => cb(d)),
   onUpdateDownloaded:  (cb) => ipcRenderer.on('update:downloaded',  (_, d) => cb(d)),
   onUpdateError:       (cb) => ipcRenderer.on('update:error',       (_, d) => cb(d)),
+
+  // ── analytics ─────────────────────────────────────────────────────────────
+  trackEvent: (name, params) => ipcRenderer.invoke('analytics:track-event', name, params),
 });

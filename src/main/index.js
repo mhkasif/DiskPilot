@@ -10,6 +10,7 @@ const registerFilesystem = require('./ipc/filesystem');
 const registerScanner    = require('./ipc/scanner');
 const registerFileops    = require('./ipc/fileops');
 const setupAutoUpdater   = require('./updater');
+const { trackEvent }     = require('./analytics');
 
 let mainWindow;
 
@@ -45,7 +46,11 @@ function createWindow() {
 // ─── App lifecycle ────────────────────────────────────────────────────────────
 
 // ─── Version IPC (sync) ───────────────────────────────────────────────────────
+// ─── Version IPC (sync) ───────────────────────────────────────────────────────
 ipcMain.on('app:version', (e) => { e.returnValue = app.getVersion(); });
+ipcMain.handle('analytics:track-event', (e, name, params) => {
+  trackEvent(name, params);
+});
 
 app.whenReady().then(() => {
   // Set macOS dock icon explicitly (BrowserWindow.icon is ignored on macOS)
@@ -72,6 +77,11 @@ app.whenReady().then(() => {
   registerScanner();
   registerFileops();
   setupAutoUpdater();
+
+  trackEvent('app_start', {
+    version: app.getVersion(),
+    platform: process.platform,
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
