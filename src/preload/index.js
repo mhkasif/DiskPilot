@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('dt', {
   // ── file operations ───────────────────────────────────────────────────────
   deleteItem   : (p) => ipcRenderer.invoke('fs:delete', p),
   deleteItems  : (paths) => ipcRenderer.invoke('fs:deleteBatch', paths),
+  cancelDelete : ()  => ipcRenderer.invoke('fs:cancelDelete'),
   openItem     : (p) => ipcRenderer.invoke('fs:open', p),
   showInDir    : (p) => ipcRenderer.invoke('fs:showInDir', p),
   copyPath     : (p) => ipcRenderer.invoke('fs:copyPath', p),
@@ -23,6 +24,9 @@ contextBridge.exposeInMainWorld('dt', {
   // ── IPC events ────────────────────────────────────────────────────────────
   onScanProgress : (cb) => ipcRenderer.on('scan:progress', (_, d) => cb(d)),
   offScanProgress: ()   => ipcRenderer.removeAllListeners('scan:progress'),
+
+  onDeleteProgress : (cb) => ipcRenderer.on('delete:progress', (_, d) => cb(d)),
+  offDeleteProgress: ()   => ipcRenderer.removeAllListeners('delete:progress'),
 
   onMenu: (cb) => {
     ipcRenderer.on('menu:scan',         () => cb('scan'));
@@ -36,6 +40,7 @@ contextBridge.exposeInMainWorld('dt', {
   onUpdateDownloading: (cb) => ipcRenderer.on('update:downloading', (_, d) => cb(d)),
   onUpdateProgress:    (cb) => ipcRenderer.on('update:progress',    (_, d) => cb(d)),
   onUpdateDownloaded:  (cb) => ipcRenderer.on('update:downloaded',  (_, d) => cb(d)),
+  onUpdateManual:      (cb) => ipcRenderer.on('update:manual',      (_, d) => cb(d)),
   onUpdateError:       (cb) => ipcRenderer.on('update:error',       (_, d) => cb(d)),
 
   // ── analytics ─────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { applyTheme } from './theme.js';
 import { initTree } from './tree.js';
 import { showState } from './scan.js';
 import { setupScanProgress } from './scan.js';
+import { setupDeleteProgress } from './fileops.js';
 import { setupContextMenu } from './contextMenu.js';
 import { setupKeyboard } from './keyboard.js';
 import { loadDrives, setupToolbar, setupHeader, setupMenuListeners } from './toolbar.js';
@@ -38,6 +39,7 @@ async function init() {
   setupKeyboard();
   setupMenuListeners();
   setupScanProgress();
+  setupDeleteProgress();
   setupSettings();
   setupOnboarding();
   setupTooltip();
@@ -65,10 +67,19 @@ function setupUpdateUI() {
   const bar       = document.getElementById('update-progress-bar');
   const percent   = document.getElementById('update-percent');
   const spinner   = document.getElementById('update-spinner');
+  const actionBtn = document.getElementById('update-action-btn');
+  const track     = overlay?.querySelector('.update-progress-track');
   if (!overlay) return;
+
+  const showProgressUI = () => {
+    if (track)     track.style.display = '';
+    if (percent)   percent.style.display = '';
+    if (actionBtn) actionBtn.style.display = 'none';
+  };
 
   window.dt.onUpdateDownloading?.((data) => {
     overlay.style.display = 'flex';
+    showProgressUI();
     title.textContent = `Downloading DiskPilot v${data.version}…`;
     detail.textContent = 'Starting download…';
     bar.style.width = '0%';
@@ -78,6 +89,7 @@ function setupUpdateUI() {
 
   window.dt.onUpdateProgress?.((data) => {
     overlay.style.display = 'flex';
+    showProgressUI();
     bar.style.width = data.percent + '%';
     percent.textContent = data.percent + '%';
     const speed = formatBytes(data.bytesPerSecond) + '/s';
@@ -92,8 +104,28 @@ function setupUpdateUI() {
     title.textContent = `DiskPilot v${data.version} Ready!`;
     detail.textContent = 'Preparing to install…';
     spinner.classList.add('done');
-    // Hide overlay after a short delay (native dialog will appear)
-    setTimeout(() => { overlay.style.display = 'none'; }, 800);
+    // On macOS an instructional 'update:manual' event follows and keeps the
+    // overlay open; on Windows/Linux the native restart dialog takes over.
+    setTimeout(() => {
+      if (window.dt.platform !== 'darwin') overlay.style.display = 'none';
+    }, 800);
+  });
+
+  // macOS: app is unsigned and can't auto-install — show manual-install steps.
+  window.dt.onUpdateManual?.((data) => {
+    overlay.style.display = 'flex';
+    spinner.classList.add('done');
+    title.textContent = `Update Ready — Manual Install`;
+    detail.innerHTML =
+      `Drag <strong>DiskPilot</strong> to Applications, then if macOS says it's ` +
+      `&ldquo;damaged&rdquo; run in Terminal:<br><code>xattr -cr /Applications/DiskPilot.app</code>`;
+    if (track)   track.style.display = 'none';
+    if (percent) percent.style.display = 'none';
+    if (actionBtn) {
+      actionBtn.style.display = '';
+      actionBtn.textContent = 'Got it';
+      actionBtn.onclick = () => { overlay.style.display = 'none'; };
+    }
   });
 
   window.dt.onUpdateError?.(() => {

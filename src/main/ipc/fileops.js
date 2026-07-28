@@ -4,8 +4,11 @@ const path = require('path');
 const { ipcMain, dialog, shell, clipboard, BrowserWindow } = require('electron');
 
 module.exports = function registerFileopIpc() {
-  // Batch delete: show one confirmation, then delete all
-  ipcMain.handle('fs:deleteBatch', async (_, itemPaths) => {
+  // Cancellation flag for the in-progress batch delete (only one runs at a time)
+  let cancelDelete = false;
+
+  // Batch delete: show one confirmation, then delete all (async + progress + cancel)
+  ipcMain.handle('fs:deleteBatch', async (event, itemPaths) => {
     const paths = Array.isArray(itemPaths) ? itemPaths : [itemPaths];
     if (!paths.length) return { ok: false, cancelled: true, deletedPaths: [], errors: [] };
 
@@ -18,7 +21,7 @@ module.exports = function registerFileopIpc() {
       ? `Delete "${sampleNames[0]}"?`
       : `Delete ${count} items?`;
     let isDir = false;
-    try { isDir = fs.lstatSync(paths[0]).isDirectory(); } catch (_) {}
+    try { isDir = (await fs.promises.lstat(paths[0])).isDirectory(); } catch (_) {}
     const detail = count === 1
       ? (isDir
           ? 'This will permanently remove the folder and ALL its contents.'
@@ -42,36 +45,69 @@ module.exports = function registerFileopIpc() {
     const deletedPaths = [];
     const errors = [];
     const useTrash = response === 0;
+    const total = paths.length;
 
-    for (const itemPath of paths) {
+    cancelDelete = false;
+
+    const sendProgress = (current, currentPath) => {
+      try {
+        event.sender.send('delete:progress', {
+          current,
+          total,
+          path   : currentPath,
+          deleted: deletedPaths.length,
+          failed : errors.length,
+        });
+      } catch (_) {}
+    };
+
+    for (let i = 0; i < paths.length; i++) {
+      if (cancelDelete) break;
+
+      const itemPath = paths[i];
+      // Report which item we're about to process so the UI shows live progress
+      sendProgress(i, itemPath);
+
       try {
         let isDir = false;
-        try { isDir = fs.lstatSync(itemPath).isDirectory(); } catch (_) {}
+        try { isDir = (await fs.promises.lstat(itemPath)).isDirectory(); } catch (_) {}
         if (useTrash) {
           await shell.trashItem(itemPath);
         } else {
-          if (isDir) fs.rmSync(itemPath, { recursive: true, force: true });
-          else       fs.unlinkSync(itemPath);
+          if (isDir) await fs.promises.rm(itemPath, { recursive: true, force: true });
+          else       await fs.promises.unlink(itemPath);
         }
         deletedPaths.push(itemPath);
       } catch (err) {
         errors.push({ path: itemPath, error: err.message });
       }
+
+      // Yield to the event loop so the main process stays responsive
+      await new Promise(r => setImmediate(r));
     }
+
+    const cancelled = cancelDelete;
+    cancelDelete = false;
+    // Final progress tick (100% of whatever was processed)
+    sendProgress(total, null);
 
     return {
       ok          : deletedPaths.length > 0,
+      cancelled,
       deletedPaths,
       errors,
       method      : useTrash ? 'trash' : 'permanent',
     };
   });
 
+  // Cancel an in-progress batch delete
+  ipcMain.handle('fs:cancelDelete', () => { cancelDelete = true; });
+
   // Single delete (for context menu / single-item callers)
   ipcMain.handle('fs:delete', async (_, itemPath) => {
     const name  = path.basename(itemPath);
     let   isDir = false;
-    try { isDir = fs.lstatSync(itemPath).isDirectory(); } catch (_) {}
+    try { isDir = (await fs.promises.lstat(itemPath)).isDirectory(); } catch (_) {}
 
     const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
     const { response } = await dialog.showMessageBox(win, {
@@ -93,8 +129,8 @@ module.exports = function registerFileopIpc() {
         await shell.trashItem(itemPath);
         return { ok: true, method: 'trash' };
       }
-      if (isDir) fs.rmSync(itemPath, { recursive: true, force: true });
-      else       fs.unlinkSync(itemPath);
+      if (isDir) await fs.promises.rm(itemPath, { recursive: true, force: true });
+      else       await fs.promises.unlink(itemPath);
       return { ok: true, method: 'permanent' };
     } catch (err) {
       return { ok: false, error: err.message };

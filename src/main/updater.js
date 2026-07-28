@@ -111,11 +111,40 @@ function setupAutoUpdater() {
     }
     sendToRenderer('update:downloaded', { version: info.version });
 
+    const releaseUrl = `https://github.com/mhkasif/DiskPilot/releases/tag/v${info.version}`;
+
     // Wait a moment for the renderer to show the "downloaded" state
     setTimeout(() => {
       const w = getWin();
       if (!w || w.isDestroyed()) return;
 
+      // macOS: the app is unsigned, so Squirrel.Mac cannot swap in the new
+      // bundle — quitAndInstall() fails (often silently). Guide the user
+      // through a reliable manual install instead.
+      if (process.platform === 'darwin') {
+        sendToRenderer('update:manual', { version: info.version, url: releaseUrl });
+        dialog
+          .showMessageBox(w, {
+            type: 'info',
+            title: 'Update Ready',
+            message: `DiskPilot v${info.version} is ready to install`,
+            detail:
+              'To finish updating:\n' +
+              '1. Open the downloaded .dmg and drag DiskPilot to Applications (replace the old one).\n' +
+              '2. If macOS says the app is "damaged", open Terminal and run:\n' +
+              '     xattr -cr /Applications/DiskPilot.app\n\n' +
+              'Open the download page now?',
+            buttons: ['Download DMG', 'Later'],
+            defaultId: 0,
+            cancelId: 1,
+          })
+          .then(({ response }) => {
+            if (response === 0) shell.openExternal(releaseUrl);
+          });
+        return;
+      }
+
+      // Windows / Linux: real auto-install works.
       dialog
         .showMessageBox(w, {
           type: 'info',
@@ -132,11 +161,11 @@ function setupAutoUpdater() {
               autoUpdater.quitAndInstall(false, true);
             } catch (err) {
               console.error('[updater] quitAndInstall failed:', err);
-              shell.openExternal(`https://github.com/mhkasif/DiskPilot/releases/tag/v${info.version}`);
+              shell.openExternal(releaseUrl);
               app.quit();
             }
           } else if (response === 1) {
-            shell.openExternal(`https://github.com/mhkasif/DiskPilot/releases/tag/v${info.version}`);
+            shell.openExternal(releaseUrl);
           }
         });
     }, 500);

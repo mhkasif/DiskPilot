@@ -3,6 +3,56 @@ import { el } from './elements.js';
 import { rebuildRows, VS } from './tree.js';
 import { updateStatusBar, flashStatus } from './statusBar.js';
 
+// ── Delete progress overlay ──────────────────────────────────────────────
+const delOverlay = () => document.getElementById('delete-overlay');
+
+function showDeleteOverlay(total) {
+  const overlay = delOverlay();
+  if (!overlay) return;
+  const title   = document.getElementById('delete-title');
+  const detail  = document.getElementById('delete-detail');
+  const bar     = document.getElementById('delete-progress-bar');
+  const percent = document.getElementById('delete-percent');
+  const spinner = document.getElementById('delete-spinner');
+  if (title)   title.textContent   = total === 1 ? 'Deleting 1 item…' : `Deleting ${total} items…`;
+  if (detail)  detail.textContent  = 'Preparing…';
+  if (bar)     bar.style.width     = '0%';
+  if (percent) percent.textContent = `0 / ${total}`;
+  if (spinner) spinner.classList.remove('done');
+  overlay.style.display = 'flex';
+}
+
+function hideDeleteOverlay() {
+  const overlay = delOverlay();
+  if (overlay) overlay.style.display = 'none';
+}
+
+// Register the progress + cancel listeners once
+export function setupDeleteProgress() {
+  window.dt.onDeleteProgress?.((d) => {
+    const overlay = delOverlay();
+    if (!overlay || overlay.style.display === 'none') return;
+    const detail  = document.getElementById('delete-detail');
+    const bar     = document.getElementById('delete-progress-bar');
+    const percent = document.getElementById('delete-percent');
+    const total   = d.total || 1;
+    const pct     = Math.min(100, Math.round((d.current / total) * 100));
+    if (bar)     bar.style.width     = pct + '%';
+    if (percent) percent.textContent = `${d.current} / ${total}`;
+    if (detail)  detail.textContent  = d.path || `${d.deleted} deleted${d.failed ? `, ${d.failed} failed` : ''}`;
+  });
+
+  const cancelBtn = document.getElementById('delete-cancel-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      cancelBtn.disabled = true;
+      const detail = document.getElementById('delete-detail');
+      if (detail) detail.textContent = 'Cancelling…';
+      window.dt.cancelDelete?.();
+    });
+  }
+}
+
 export async function deleteSelected() {
   const paths = [...S.selectedSet];
   if (!paths.length) return;
@@ -12,12 +62,22 @@ export async function deleteSelected() {
   el.btnDelete.classList.add('deleting');
   flashStatus('Deleting…');
 
-  let lastError = null;
+  const cancelBtn = document.getElementById('delete-cancel-btn');
+  if (cancelBtn) cancelBtn.disabled = false;
+  showDeleteOverlay(paths.length);
 
-  const res = await window.dt.deleteItems(paths);
-  if (res.cancelled) {
+  let lastError = null;
+  let res;
+  try {
+    res = await window.dt.deleteItems(paths);
+  } finally {
+    hideDeleteOverlay();
+  }
+
+  if (res.cancelled && !(res.deletedPaths || []).length) {
     el.btnDelete.classList.remove('deleting');
     el.btnDelete.disabled = false;
+    flashStatus('Delete cancelled.');
     return;
   }
   for (const p of res.deletedPaths || []) removeFromTree(p);
@@ -39,6 +99,9 @@ export async function deleteSelected() {
   // ── Status feedback ────────────────────────────────────────────────────
   if (lastError) {
     flashStatus('Delete failed: ' + lastError, true);
+  } else if (res.cancelled && deletedCount > 0) {
+    const label = deletedCount === 1 ? '1 item' : `${deletedCount} items`;
+    flashStatus(`Cancelled — ${label} deleted`);
   } else if (deletedCount > 0) {
     const label = deletedCount === 1 ? '1 item' : `${deletedCount} items`;
     flashStatus(`${label} deleted ✓`);
