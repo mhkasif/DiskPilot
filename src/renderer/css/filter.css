@@ -1,0 +1,79 @@
+/* ── Filter Bar ──────────────────────────────────────────────────────────── */
+#filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#filter-bar.hidden {
+  display: none !important;
+}
+
+.filter-input-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.filter-icon {
+  position: absolute;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  fill: var(--text3);
+  pointer-events: none;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 5px 10px 5px 30px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.filter-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.2);
+}
+
+.filter-clear-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.filter-clear-btn:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.filter-syntax-hint {
+  font-size: 11px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+.filter-syntax-hint code {
+  background: var(--surface2);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}

@@ -11,9 +11,11 @@ export function showState(s) {
   el.stateScanning.style.display   = s === 'scanning'   ? 'flex'    : 'none';
   el.treeWrap.style.display        = s === 'tree'       ? 'flex'    : 'none';
   el.chartWrap.style.display       = s === 'chart'      ? 'flex'    : 'none';
+  if (el.featurePanel) el.featurePanel.style.display = s === 'panel' ? 'flex' : 'none';
   el.gridHeader.style.visibility   = s === 'tree'       ? 'visible' : 'hidden';
+  if (el.filterBar) el.filterBar.classList.toggle('hidden', s !== 'tree' || !S.tree);
   // Track current view in state
-  if (s === 'tree') S.currentView = 'tree';
+  if (s === 'tree' || s === 'panel') S.currentView = s;
   // Sync view-toggle active state
   const hasTree = !!S.tree;
   el.btnViewTree    .classList.toggle('view-active', s === 'tree');
@@ -24,6 +26,7 @@ export function showState(s) {
   el.btnViewTreemap .disabled = !hasTree;
   el.btnViewBarchart.disabled = !hasTree;
   el.btnViewPiechart.disabled = !hasTree;
+  if (el.btnTools) el.btnTools.disabled = !hasTree && s !== 'panel';
 
   if (s === 'chart' || s === 'tree') {
     window.dt.trackEvent('view_change', { view: s === 'chart' ? S.currentView : 'tree' });

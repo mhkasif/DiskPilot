@@ -59,4 +59,11 @@ export const el = {
   chartWrap       : $('chart-wrap'),
   chartBreadcrumb : $('chart-breadcrumb'),
   treemapContainer: $('treemap-container'),
+  // new tools & panel
+  btnTools        : $('btn-tools'),
+  toolsMenu       : $('tools-menu'),
+  filterBar       : $('filter-bar'),
+  filterInput     : $('filter-input'),
+  filterClearBtn  : $('filter-clear-btn'),
+  featurePanel    : $('feature-panel'),
 };

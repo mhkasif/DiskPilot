@@ -16,6 +16,11 @@ import { setupTreemap } from './treemap.js';
 import { setupBarchart } from './barchart.js';
 import { setupPiechart } from './piechart.js';
 import { setupColumnResize } from './columnResize.js';
+import { setupFilterBar } from './filter.js';
+import { renderDuplicatesPanel } from './duplicates.js';
+import { renderJunkPanel } from './junk.js';
+import { renderFileTypesPanel } from './filetypes.js';
+import { renderTop100Panel, renderForgottenPanel } from './toplist.js';
 
 async function init() {
   loadSettings();
@@ -47,11 +52,45 @@ async function init() {
   setupBarchart();
   setupPiechart();
   setupColumnResize();
+  setupFilterBar();
+  setupToolsMenu();
   setupUpdateUI();
 
   const saved = sessionStorage.getItem('dt-lastPath');
   if (saved) el.pathInput.value = saved;
   showState('onboarding');
+}
+
+function setupToolsMenu() {
+  if (!el.btnTools || !el.toolsMenu) return;
+
+  el.btnTools.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isVisible = el.toolsMenu.style.display === 'block';
+    el.toolsMenu.style.display = isVisible ? 'none' : 'block';
+  });
+
+  document.addEventListener('click', () => {
+    if (el.toolsMenu) el.toolsMenu.style.display = 'none';
+  });
+
+  el.toolsMenu.addEventListener('click', (e) => {
+    const item = e.target.closest('[data-tool]');
+    if (!item) return;
+    const tool = item.dataset.tool;
+    el.toolsMenu.style.display = 'none';
+
+    showState('panel');
+    S.activePanel = tool;
+
+    switch (tool) {
+      case 'duplicates': renderDuplicatesPanel(); break;
+      case 'junk':       renderJunkPanel();       break;
+      case 'filetypes':  renderFileTypesPanel();  break;
+      case 'top100':     renderTop100Panel();     break;
+      case 'forgotten':  renderForgottenPanel();  break;
+    }
+  });
 }
 
 function formatBytes(bytes) {

@@ -9,6 +9,10 @@ const buildMenu          = require('./menu');
 const registerFilesystem = require('./ipc/filesystem');
 const registerScanner    = require('./ipc/scanner');
 const registerFileops    = require('./ipc/fileops');
+const registerDuplicates = require('./ipc/duplicates');
+const registerJunk       = require('./ipc/junk');
+const registerSnapshots  = require('./ipc/snapshots');
+const registerPreview    = require('./ipc/preview');
 const setupAutoUpdater   = require('./updater');
 const { trackEvent }     = require('./analytics');
 
@@ -76,6 +80,10 @@ app.whenReady().then(() => {
   registerFilesystem();
   registerScanner();
   registerFileops();
+  registerDuplicates();
+  registerJunk();
+  registerSnapshots();
+  registerPreview();
   setupAutoUpdater();
 
   trackEvent('app_start', {

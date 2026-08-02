@@ -39,6 +39,8 @@ async function scanNode(nodePath, sender, scanId, ctrl, seenInodes) {
   catch (_) { node.error = true; return node; }
 
   node.mtime = st.mtimeMs;
+  node.atime = st.atimeMs || 0;
+  node.birthtime = st.birthtimeMs || 0;
 
   if (st.isSymbolicLink()) {
     // Record symlink itself (don't follow — avoids infinite loops and double-counting)

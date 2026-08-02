@@ -20,6 +20,26 @@ contextBridge.exposeInMainWorld('dt', {
   showInDir    : (p) => ipcRenderer.invoke('fs:showInDir', p),
   copyPath     : (p) => ipcRenderer.invoke('fs:copyPath', p),
   exists       : (p) => ipcRenderer.invoke('fs:exists', p),
+  quickLook    : (p) => ipcRenderer.invoke('fs:quickLook', p),
+
+  // ── duplicates ─────────────────────────────────────────────────────────────
+  findDuplicates  : (candidates) => ipcRenderer.invoke('dup:find', candidates),
+  cancelDuplicates: () => ipcRenderer.invoke('dup:cancel'),
+  getThumbnail    : (p) => ipcRenderer.invoke('dup:thumbnail', p),
+  onDupProgress   : (cb) => ipcRenderer.on('dup:progress', (_, d) => cb(d)),
+  offDupProgress  : () => ipcRenderer.removeAllListeners('dup:progress'),
+
+  // ── junk sweeper ───────────────────────────────────────────────────────────
+  scanJunk     : (root) => ipcRenderer.invoke('junk:scan', root),
+  cancelJunk   : () => ipcRenderer.invoke('junk:cancel'),
+  onJunkProgress: (cb) => ipcRenderer.on('junk:progress', (_, d) => cb(d)),
+  offJunkProgress: () => ipcRenderer.removeAllListeners('junk:progress'),
+
+  // ── snapshots ──────────────────────────────────────────────────────────────
+  saveSnapshot  : (payload) => ipcRenderer.invoke('snapshot:save', payload),
+  listSnapshots : () => ipcRenderer.invoke('snapshot:list'),
+  loadSnapshot  : (id) => ipcRenderer.invoke('snapshot:load', id),
+  deleteSnapshot: (id) => ipcRenderer.invoke('snapshot:delete', id),
 
   // ── IPC events ────────────────────────────────────────────────────────────
   onScanProgress : (cb) => ipcRenderer.on('scan:progress', (_, d) => cb(d)),

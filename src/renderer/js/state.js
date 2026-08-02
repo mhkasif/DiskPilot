@@ -13,7 +13,9 @@ export const S = {
   scanId     : null,
   scanStart  : 0,
   rootPath   : null,
-  currentView: 'tree', // 'tree' | 'treemap' | 'barchart' | 'piechart'
+  currentView: 'tree', // 'tree' | 'treemap' | 'barchart' | 'piechart' | 'panel'
+  activePanel: null,   // null | 'duplicates' | 'junk' | 'filetypes' | 'top100' | 'forgotten' | 'snapshots'
+  filter     : null,   // null | { query: string, raw: string, ext?: string, minSize?: number, isRegex?: boolean, regex?: RegExp }
   settings   : {
     theme      : 'auto',  // 'auto' | 'light' | 'dark'
     units      : 'auto',

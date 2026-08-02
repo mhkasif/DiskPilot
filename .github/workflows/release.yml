@@ -97,7 +97,11 @@ jobs:
             --latest \
             --notes "## DiskPilot $TAG
 
-          Your disk space, visualized & reclaimed.
+          **What's New in v2.1.0:**
+          - 🚀 **Massive Performance Boost:** The Duplicate Finder now easily handles hundreds of thousands of files without crashing (fixed V8 Out of Memory error) by pre-filtering file sizes and rendering results in chunks.
+          - 🔄 **Updated UI:** Added a sleek new animated progress bar to the Junk Sweeper screen and centered the Duplicate Finder progress bar.
+          - 🛠️ **Refinements:** Fixed table scrolling and long path wrapping in the Forgotten Files panel, and replaced a broken refresh icon.
+          - 🧹 **Cleanup:** Removed the Snapshots feature for a cleaner Tools menu.
 
           ### Downloads
           | Platform | File |

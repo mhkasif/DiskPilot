@@ -62,15 +62,52 @@ export function initTree() {
   new ResizeObserver(() => VS.render()).observe(el.treeScroll);
 }
 
+// ── Filter matching helpers ───────────────────────────────────────────────────
+export function nodeMatchesFilter(node, filter) {
+  if (!filter) return true;
+  if (filter.ext && node.ext !== filter.ext) return false;
+  if (filter.minSize != null && (node.size || 0) < filter.minSize) return false;
+  if (filter.isRegex && filter.regex) {
+    return filter.regex.test(node.name) || filter.regex.test(node.path);
+  }
+  if (filter.query) {
+    const q = filter.query.toLowerCase();
+    return (node.name || '').toLowerCase().includes(q) || (node.path || '').toLowerCase().includes(q);
+  }
+  return true;
+}
+
+export function subtreeMatchesFilter(node, filter) {
+  if (!node) return false;
+  if (nodeMatchesFilter(node, filter)) return true;
+  if (node.isDir && node.children) {
+    for (const c of node.children) {
+      if (subtreeMatchesFilter(c, filter)) return true;
+    }
+  }
+  return false;
+}
+
 // ── Flat row builder ──────────────────────────────────────────────────────────
 export function rebuildRows() {
   const out = [];
+  const filter = S.filter && (S.filter.query || S.filter.ext || S.filter.minSize || S.filter.isRegex) ? S.filter : null;
+
   const visit = (node, depth) => {
     if (out.length >= MAX_ROWS) return;
     if (!S.settings.showHidden && node.name.startsWith('.') && depth > 0) return;
-    out.push({ node, depth });
-    if (node.isDir && node.children && S.expanded.has(node.path)) {
-      for (const c of sortNodes(node.children)) visit(c, depth + 1);
+
+    if (filter) {
+      if (!subtreeMatchesFilter(node, filter)) return;
+      out.push({ node, depth });
+      if (node.isDir && node.children) {
+        for (const c of sortNodes(node.children)) visit(c, depth + 1);
+      }
+    } else {
+      out.push({ node, depth });
+      if (node.isDir && node.children && S.expanded.has(node.path)) {
+        for (const c of sortNodes(node.children)) visit(c, depth + 1);
+      }
     }
   };
   if (S.tree) visit(S.tree, 0);

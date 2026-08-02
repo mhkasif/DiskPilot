@@ -31,11 +31,14 @@ function hideDeleteOverlay() {
 export function setupDeleteProgress() {
   window.dt.onDeleteProgress?.((d) => {
     const overlay = delOverlay();
-    if (!overlay || overlay.style.display === 'none') return;
+    if (!overlay) return;
+    const total = d.total || 1;
+    if (d.current < total && overlay.style.display === 'none') {
+      showDeleteOverlay(total);
+    }
     const detail  = document.getElementById('delete-detail');
     const bar     = document.getElementById('delete-progress-bar');
     const percent = document.getElementById('delete-percent');
-    const total   = d.total || 1;
     const pct     = Math.min(100, Math.round((d.current / total) * 100));
     if (bar)     bar.style.width     = pct + '%';
     if (percent) percent.textContent = `${d.current} / ${total}`;
@@ -64,7 +67,6 @@ export async function deleteSelected() {
 
   const cancelBtn = document.getElementById('delete-cancel-btn');
   if (cancelBtn) cancelBtn.disabled = false;
-  showDeleteOverlay(paths.length);
 
   let lastError = null;
   let res;
