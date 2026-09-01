@@ -105,33 +105,45 @@ Available formats:
 
 ### Install
 
-**macOS**
+#### macOS
 
-1. Download the `.dmg` file from Releases
-2. Open the `.dmg` and drag **DiskPilot** to your **Applications** folder
-3. **First launch:** Since the app is not notarized, macOS will warn you. To
-   open it:
-   - **Right-click** (or Control+click) on DiskPilot in Applications
-   - Click **"Open"** from the menu
-   - Click **"Open"** again in the dialog
-   - After this one-time step, it opens normally every time
-4. If you still see _"is damaged"_, run this in Terminal:
-   ```bash
-   xattr -cr /Applications/DiskPilot.app
-   ```
+1. Download the **macOS Universal `.dmg`** file from [Releases](https://github.com/mhkasif/DiskPilot/releases).
+2. Open the `.dmg` and drag **DiskPilot** into your **Applications** folder.
+3. **First Launch (macOS Gatekeeper Note):**
+   Since DiskPilot is free & open-source, it is currently not signed with a paid Apple Developer certificate. On first launch, macOS Gatekeeper may show a warning like *"DiskPilot is damaged and can’t be opened"* or block the application.
 
-**Windows**
+   You can easily resolve this one-time prompt using either method:
 
-1. Download the `.exe` installer from Releases
-2. Run the installer — DiskPilot will install and launch automatically
+   - **Option 1: Terminal (Quickest)**
+     Run this command in Terminal to clear the quarantine flag:
+     ```bash
+     xattr -cr /Applications/DiskPilot.app
+     ```
+   
+   - **Option 2: System Settings (GUI)**
+     1. Open **System Settings** → **Privacy & Security**.
+     2. Scroll down to the **Security** section.
+     3. You will see *"DiskPilot was blocked from use..."* — click **"Open Anyway"**.
+     4. Confirm with your password/Touch ID and click **"Open"**.
 
-**Linux**
+   - **Option 3: Right-Click Open**
+     1. In Finder, open the **Applications** folder.
+     2. **Right-click** (or Control+click) **DiskPilot.app** → click **"Open"** → click **"Open"** again.
 
-- **AppImage:** Download, then run:
+   *(This is a one-time step. DiskPilot will open normally on every subsequent launch.)*
+
+#### Windows
+
+1. Download the `.exe` installer from [Releases](https://github.com/mhkasif/DiskPilot/releases).
+2. Run the installer — DiskPilot will install and launch automatically.
+
+#### Linux
+
+- **AppImage:** Download, make executable, and run:
   ```bash
   chmod +x DiskPilot-*.AppImage && ./DiskPilot-*.AppImage
   ```
-- **Debian/Ubuntu:** Download the `.deb`, then:
+- **Debian / Ubuntu:** Download the `.deb` and install:
   ```bash
   sudo dpkg -i diskpilot_*.deb
   ```
