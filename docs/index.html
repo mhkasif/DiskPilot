@@ -814,6 +814,15 @@
         <summary>Why does the reported size differ from Finder or Windows?</summary>
         <p>DiskPilot reports actual disk usage (allocated blocks), not logical file size. This gives you the same numbers as the "du" command and matches what your OS reports for total disk usage. Hardlink deduplication prevents double-counting shared files.</p>
       </details>
+      <details class="faq-item reveal">
+        <summary>How do I open DiskPilot on macOS if it says "damaged" or is blocked?</summary>
+        <p>Because DiskPilot is free and open-source, it is not signed with an Apple Developer certificate. On first launch, macOS Gatekeeper may show a warning. You can resolve this easily:
+        <br/><br/>
+        <b>Option 1:</b> Run <code>xattr -cr /Applications/DiskPilot.app</code> in Terminal.<br/>
+        <b>Option 2:</b> Go to <b>System Settings &gt; Privacy &amp; Security &gt; Security</b> and click <b>"Open Anyway"</b>.<br/>
+        <b>Option 3:</b> Right-click <code>DiskPilot.app</code> in Applications and choose <b>Open</b>.
+        </p>
+      </details>
     </div>
   </div>
 </section>
