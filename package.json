@@ -33,6 +33,13 @@
       "assets/**/*",
       "package.json"
     ],
+    "extraFiles": [
+      {
+        "from": "INSTALL_GUIDE.md",
+        "to": ".",
+        "filter": ["**/*"]
+      }
+    ],
     "mac": {
       "icon": "assets/playstore.png",
       "category": "public.app-category.utilities",
@@ -42,16 +49,24 @@
         { "target": "zip", "arch": ["x64", "arm64"] }
       ]
     },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" },
+        { "x": 270, "y": 220, "type": "file", "path": "INSTALL_GUIDE.md" }
+      ]
+    },
     "win": {
       "icon": "assets/playstore.png",
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "zip", "arch": ["x64"] }
       ]
     },
     "linux": {
       "icon": "assets/playstore.png",
       "category": "Utility",
-      "target": ["AppImage", "deb"]
+      "target": ["AppImage", "deb", "zip"]
     }
   },
   "dependencies": {
