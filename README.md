@@ -61,23 +61,20 @@ DiskPilot gives you:
 
 ## Features – What Makes DiskPilot Powerful
 
-- Deep disk scan — recursively walks any folder in seconds
-- Hardlink deduplication — accurate real disk usage calculation
-- Tree view — sortable columns: Size, Allocated, Files, Folders, Last Modified
-- Virtual scrolling — handles millions of rows without lag
-- Treemap view — squarified treemap layout
-  - Click to drill down
-  - Breadcrumb navigation
-- Multi-selection: Click, Shift+Click, Ctrl/Cmd+Click, Shift+Arrow
-- Bulk delete
-- Delete to Trash — safe removal via system Trash
-- Column resizing — widths persist across sessions
-- Live scan rate (GB/s) + elapsed time
-- Dark / Light / Auto theme
-- Keyboard-first navigation
-- Native context menu: Open, Show in Finder/Explorer, Copy Path, Delete
-- Cross-platform builds: macOS Universal (.dmg), Windows NSIS installer, Linux
-  AppImage + .deb
+- **Deep Disk Scan** — Recursively walks any folder in seconds with live scan rate (GB/s) & elapsed time
+- **Hardlink Deduplication** — Byte-accurate real disk usage calculation without double-counting
+- **Interactive Treemap Visualization** — Squarified treemap layout with click-to-drill-down and breadcrumb navigation
+- **Tree View & Virtual Scrolling** — Sortable columns (Size, Allocated, Files, Folders, Last Modified) handling millions of rows without lag
+- **Duplicate File Finder** — Find and remove exact byte-for-byte duplicate files scattered across drives
+- **Junk Sweeper** — Clean up hidden system caches, package manager caches, and build directories (like `node_modules`) with one click
+- **Forgotten Files** — Quickly identify large files that haven't been opened or modified in months or years
+- **Delete Management** — Safe removal via system Trash or permanent deletion with progress modal and cancel support
+- **Multi-Selection & Bulk Actions** — Click, Shift+Click, Ctrl/Cmd+Click, Shift+Arrow to select and delete in bulk
+- **Column Resizing** — Widths persist across sessions
+- **Dark & Light Mode** — Follows OS appearance automatically or choose manually
+- **Keyboard-First Navigation** — Smooth navigation with arrow keys, Enter, Delete, Escape, and shortcuts
+- **Native Context Menu** — Open, Show in Finder/Explorer, Copy Path, Delete
+- **Cross-Platform Builds** — macOS Universal (.dmg), Windows NSIS installer, Linux AppImage + .deb
 
 ---
 
