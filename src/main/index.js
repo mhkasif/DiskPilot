@@ -87,8 +87,8 @@ app.whenReady().then(() => {
   setupAutoUpdater();
 
   trackEvent('app_start', {
-    version: app.getVersion(),
-    platform: process.platform,
+    version:  app.getVersion(),
+    app_name: 'DiskPilot',
   });
 
   app.on('activate', () => {
