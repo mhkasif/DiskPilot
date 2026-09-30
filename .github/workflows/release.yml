@@ -63,6 +63,36 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:linux -- --publish always
 
+      - name: Embed AppImageUpdate info & generate .zsync
+        run: |
+          set -e
+          cd dist
+
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool.AppImage
+          chmod +x appimagetool.AppImage
+
+          for APPIMAGE in DiskPilot-*.AppImage; do
+            [ -e "$APPIMAGE" ] || continue
+            echo "Patching $APPIMAGE with AppImageUpdate info..."
+            chmod +x "$APPIMAGE"
+            ./"$APPIMAGE" --appimage-extract >/dev/null
+            ./appimagetool.AppImage --appimage-extract-and-run \
+              -u "gh-releases-zsync|mhkasif|DiskPilot|latest|DiskPilot-*.AppImage.zsync" \
+              squashfs-root "$APPIMAGE"
+            rm -rf squashfs-root
+          done
+
+          rm -f appimagetool.AppImage
+          ls -la *.AppImage *.zsync
+
+      - name: Upload updated AppImage assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          gh release upload "$TAG" dist/DiskPilot-*.AppImage dist/DiskPilot-*.AppImage.zsync \
+            --repo "${{ github.repository }}" --clobber
+
   # ── Release Notes ────────────────────────────────────────────────────────────
   release-notes:
     needs: [build-mac, build-win, build-linux]
