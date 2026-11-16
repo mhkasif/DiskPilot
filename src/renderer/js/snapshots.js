@@ -2,6 +2,7 @@ import { S } from './state.js';
 import { el } from './elements.js';
 import { fmt, fmtDate } from './format.js';
 import { flattenTree, chunkCount, sliceChunk } from './treeTransfer.js';
+import { escapeHtml } from './escape.js';
 
 let snapshotList = [];
 
@@ -126,18 +127,18 @@ function renderSnapshotListUI() {
 
     row.innerHTML = `
       <div style="display:flex; align-items:center; gap:12px;">
-        <input type="checkbox" class="snap-cb" data-id="${snap.id}" />
+        <input type="checkbox" class="snap-cb" data-id="${escapeHtml(snap.id)}" />
         <div>
-          <strong style="font-size:13px;">${snap.rootPath}</strong>
+          <strong style="font-size:13px;">${escapeHtml(snap.rootPath)}</strong>
           <div style="font-size:11px; color:var(--text3); margin-top:2px;">Saved ${fmtDate(snap.savedAt)}</div>
         </div>
       </div>
       <div style="display:flex; align-items:center; gap:16px;">
         <div style="text-align:right;">
-          <strong style="font-size:13px;">${fmt(snap.totalSize)}</strong>
-          <div style="font-size:11px; color:var(--text3);">${snap.files} files</div>
+          <strong style="font-size:13px;">${escapeHtml(fmt(snap.totalSize))}</strong>
+          <div style="font-size:11px; color:var(--text3);">${escapeHtml(snap.files)} files</div>
         </div>
-        <button class="panel-btn panel-btn-danger snap-btn-del" data-id="${snap.id}">Delete</button>
+        <button class="panel-btn panel-btn-danger snap-btn-del" data-id="${escapeHtml(snap.id)}">Delete</button>
       </div>
     `;
 
@@ -266,9 +267,9 @@ function runTreeDiff(snapA, snapB) {
               return `
                 <tr>
                   <td>${badgeHtml}</td>
-                  <td style="font-family:monospace; font-size:11px;" title="${item.path}">${item.path}</td>
-                  <td>${item.sizeA > 0 ? fmt(item.sizeA) : '—'}</td>
-                  <td>${item.sizeB > 0 ? fmt(item.sizeB) : '—'}</td>
+                  <td style="font-family:monospace; font-size:11px;" title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</td>
+                  <td>${item.sizeA > 0 ? escapeHtml(fmt(item.sizeA)) : '—'}</td>
+                  <td>${item.sizeB > 0 ? escapeHtml(fmt(item.sizeB)) : '—'}</td>
                   <td class="${deltaClass}"><strong>${deltaStr}</strong></td>
                 </tr>
               `;

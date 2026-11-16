@@ -596,3 +596,81 @@ test('cancelScan right after a scan of a single file discards the finished resul
   assert.equal((await call('fs:scanChunk', A, 'sc-single', 0)).ok, false);
   assert.equal(existingState(A).transfer, null);
 });
+
+// ── snapshot id validation ───────────────────────────────────────────────────
+const BAD_IDS = ['../secret', '..\\secret', 'snap-1/../../secret', 'snap-1/../../victim', '/etc/passwd', '', 'snap-', 'snap-1x', 'snap-1\n', 'snap--1', 'SNAP-1', ' snap-1', 'snap-1 ', 'snap-1.json', 'x-snap-1', 'snap-１２'];
+const BAD_TYPES = [undefined, null, 42, {}, { toString: () => 'snap-1' }];
+
+test('snapshot:load only accepts ids of the form snap-<digits>', async () => {
+  const S = new Sender(200);
+  fs.writeFileSync(path.join(USER_DATA, 'secret.json'), JSON.stringify({ secret: true }));
+  for (const bad of BAD_IDS) {
+    const r = await call('snapshot:load', S, bad);
+    assert.equal(r.ok, false, `id ${JSON.stringify(bad)} must be rejected`);
+    assert.equal(r.data, undefined);
+    assert.equal(r.error, 'Invalid snapshot id');
+  }
+  for (const bad of BAD_TYPES) {
+    const r = await call('snapshot:load', S, bad);
+    assert.deepEqual(r, { ok: false, error: 'Invalid snapshot id' });
+  }
+});
+
+test('snapshot:load still loads a saved snapshot by its id; an array holding the id is rejected', async () => {
+  const S = new Sender(201);
+  const saved = await upload(S, '/r', [chunkOf([d('r', [])], [-1])], 1);
+  assert.match(saved.id, /^snap-\d+$/);
+  const r = await call('snapshot:load', S, saved.id);
+  assert.equal(r.ok, true);
+  assert.equal(r.data.id, saved.id);
+  assert.equal((await call('snapshot:load', S, [saved.id])).ok, false);
+});
+
+test('snapshot:load of a valid id that does not exist is a plain error', async () => {
+  const r = await call('snapshot:load', new Sender(202), 'snap-1');
+  assert.equal(r.ok, false);
+  assert.notEqual(r.error, 'Invalid snapshot id');
+});
+
+test('snapshot:delete only accepts ids of the form snap-<digits> and deletes nothing else', async () => {
+  const S = new Sender(203);
+  const victim = path.join(USER_DATA, 'victim.json');
+  fs.writeFileSync(victim, '{}');
+  for (const bad of [...BAD_IDS, ...BAD_TYPES]) {
+    const r = await call('snapshot:delete', S, bad);
+    assert.deepEqual(r, { ok: false, error: 'Invalid snapshot id' }, `id ${String(bad)}`);
+  }
+  assert.equal(fs.existsSync(victim), true);
+});
+
+test('snapshot:delete removes a saved snapshot by its id; an array holding the id is rejected', async () => {
+  const S = new Sender(204);
+  const saved = await upload(S, '/r', [chunkOf([d('r', [])], [-1])], 1);
+  const file = path.join(USER_DATA, 'snapshots', `${saved.id}.json`);
+  assert.equal((await call('snapshot:delete', S, [saved.id])).ok, false);
+  assert.equal(fs.existsSync(file), true);
+  assert.deepEqual(await call('snapshot:delete', S, saved.id), { ok: true });
+  assert.equal(fs.existsSync(file), false);
+  assert.deepEqual(await call('snapshot:delete', S, saved.id), { ok: true }); // already gone
+});
+
+// ── snapshot:list ids come from the file name ────────────────────────────────
+test('snapshot:list derives ids from file names and skips anything else', async () => {
+  const dir = path.join(USER_DATA, 'snapshots');
+  fs.mkdirSync(dir, { recursive: true });
+  const body = (extra) => JSON.stringify({ rootPath: '/x', savedAt: 5, tree: { size: 1, files: 1, folders: 0 }, ...extra });
+  fs.writeFileSync(path.join(dir, 'snap-900.json'), body({ id: '../victim' })); // data.id lies
+  fs.writeFileSync(path.join(dir, 'snap-901.json'), body({}));
+  fs.writeFileSync(path.join(dir, 'other.json'), body({ id: 'snap-1' }));
+  fs.writeFileSync(path.join(dir, 'snap-902'), body({}));
+  fs.writeFileSync(path.join(dir, 'snap-1234567890'), body({})); // no .json: slicing 5 chars would still look like an id
+  fs.writeFileSync(path.join(dir, 'snap-9x.json'), body({}));
+  fs.writeFileSync(path.join(dir, 'snap-.json'), body({}));
+  const r = await call('snapshot:list', new Sender(210));
+  const ids = r.list.map(x => x.id);
+  assert.ok(ids.includes('snap-900') && ids.includes('snap-901'));
+  assert.ok(!ids.includes('../victim'));
+  for (const bad of ['other', 'snap-1', 'snap-902', 'snap-12345', 'snap-9x', 'snap-']) assert.ok(!ids.includes(bad), bad);
+  assert.ok(ids.every(id => /^snap-\d+$/.test(id)));
+  for (const f of ['snap-900.json', 'snap-901.json', 'other.json', 'snap-902', 'snap-1234567890', 'snap-9x.json', 'snap-.json']) fs.rmSync(path.join(dir, f));
+});

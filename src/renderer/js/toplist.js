@@ -4,6 +4,7 @@ import { fmt, fmtDate } from './format.js';
 import { collectFiles } from './treewalk.js';
 import { removeFromTree } from './fileops.js';
 import { selectPath, VS, rebuildRows } from './tree.js';
+import { escapeHtml } from './escape.js';
 
 let currentTopFiles = [];
 
@@ -63,8 +64,8 @@ export function renderTop100Panel() {
                 ${currentTopFiles.map((file, idx) => `
                   <tr>
                     <td><strong>#${idx + 1}</strong></td>
-                    <td><strong>${file.name}</strong></td>
-                    <td class="cell-path" title="${file.path}">${file.path}</td>
+                    <td><strong>${escapeHtml(file.name)}</strong></td>
+                    <td class="cell-path" title="${escapeHtml(file.path)}">${escapeHtml(file.path)}</td>
                     <td><strong>${fmt(file.size)}</strong></td>
                     <td>${fmtDate(file.mtime)}</td>
                     <td>
@@ -178,8 +179,8 @@ export function renderForgottenPanel() {
                   const accessTime = (file.atime && file.atime > 0) ? file.atime : file.mtime;
                   return `
                     <tr>
-                      <td><strong>${file.name}</strong></td>
-                      <td class="cell-path" title="${file.path}">${file.path}</td>
+                      <td><strong>${escapeHtml(file.name)}</strong></td>
+                      <td class="cell-path" title="${escapeHtml(file.path)}">${escapeHtml(file.path)}</td>
                       <td><strong>${fmt(file.size)}</strong></td>
                       <td>${fmtDate(accessTime)}</td>
                       <td>

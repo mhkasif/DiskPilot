@@ -4,6 +4,8 @@ const GB = 1024 ** 3, MB = 1024 ** 2, KB = 1024;
 
 export function fmt(b) {
   if (b == null) return '—';
+  b = Number(b); // sizes can come from files on disk; never echo a non-number back
+  if (!Number.isFinite(b)) return '—';
   switch (S.unitMode) {
     case 'b':  return b.toLocaleString() + ' B';
     case 'kb': return (b / KB).toFixed(1) + ' KB';
