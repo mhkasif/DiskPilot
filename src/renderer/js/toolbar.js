@@ -5,7 +5,7 @@ import { triggerScan, cancelScan, showState } from './scan.js';
 import { renderTreemap, initTreemap } from './treemap.js';
 import { renderBarchart } from './barchart.js';
 import { renderPiechart } from './piechart.js';
-import { revealViewPath } from './chartNav.js';
+import { revealViewPath, isChartView } from './chartNav.js';
 import { deleteSelected } from './fileops.js';
 import { expandAll, collapseAll, VS, rebuildRows } from './tree.js';
 import { openSettings, openAbout } from './settings.js';
@@ -38,7 +38,7 @@ export function setupToolbar() {
   el.btnCancelScan.addEventListener('click', cancelScan);
   el.btnBrowse.addEventListener('click',    browseScan);
   el.btnStartScan.addEventListener('click', () => triggerScan());
-  el.btnDelete.addEventListener('click',    deleteSelected);
+  el.btnDelete.addEventListener('click',    () => { if (!isChartView()) deleteSelected(); });
   el.btnShowFinder.addEventListener('click', () => { if (S.selected) window.dt.showInDir(S.selected); });
   el.btnExpandAll.addEventListener('click',   expandAll);
   el.btnCollapseAll.addEventListener('click', collapseAll);
@@ -53,7 +53,7 @@ export function setupToolbar() {
   // View toggle – tree is default; chart buttons toggle on/off
   // Leaving a chart for the tree reveals the chart's current folder there.
   const toTree = () => {
-    const fromChart = S.currentView !== 'tree';
+    const fromChart = isChartView();
     S.currentView = 'tree'; showState('tree');
     if (fromChart) revealViewPath();
   };

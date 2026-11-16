@@ -13,6 +13,7 @@ export const S = {
   scanId     : null,
   scanStart  : 0,
   rootPath   : null,
+  viewPath   : null,    // folder shown by the chart views (path string, resolved against tree each render)
   currentView: 'tree', // 'tree' | 'treemap' | 'barchart' | 'piechart' | 'panel'
   activePanel: null,   // null | 'duplicates' | 'junk' | 'filetypes' | 'top100' | 'forgotten' | 'snapshots'
   filter     : null,   // null | { query: string, raw: string, ext?: string, minSize?: number, isRegex?: boolean, regex?: RegExp }
