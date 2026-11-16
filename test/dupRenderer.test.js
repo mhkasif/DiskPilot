@@ -24,7 +24,17 @@ test.before(async () => {
 });
 
 const CS = 20000;
-const tick = (ms = 4) => new Promise(r => setTimeout(r, ms));
+// Wait for an observable condition (bounded poll), never for a fixed number of ticks: the panel
+// leaves through a dynamic import('./scan.js') whose first resolution takes longer on some Node versions.
+async function until(cond, ms = 5000) {
+  const end = Date.now() + ms;
+  while (!cond()) {
+    if (Date.now() > end) throw new Error('condition not reached: ' + cond);
+    await new Promise(r => setTimeout(r, 2));
+  }
+}
+// For "nothing more happens" checks: let already queued work run, then look.
+const settle = () => new Promise(r => setTimeout(r, 20));
 function deferred() { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; }
 const dgroup = (hash, n, size = 5, gi = 0) => ({ hash, size, gi, files: Array.from({ length: n }, (_, i) => ({ path: `/${hash}${i}`, mtime: 1, birthtime: 1 })) });
 
@@ -237,15 +247,14 @@ test('panel: a thrown error shows the message', async () => {
 test('panel: cancel while the run is hashing returns to the tree', async () => {
   resetPanel();
   const gate = deferred();
-  const { log } = fakeDt({ dt: { runDuplicates: () => gate.promise } });
+  const { log } = fakeDt({ dt: { runDuplicates: () => { log.calls.push('run'); return gate.promise; } } });
   const p = dups.renderDuplicatesPanel();
-  await tick();
+  await until(() => log.calls.includes('run'));
   nodes['dup-btn-cancel'].listeners.click();
   assert.equal(log.cancelled, 1);
   gate.resolve({ ok: false, cancelled: true });
   await p;
-  await tick();
-  assert.equal(el.treeWrap.style.display, 'flex');
+  await until(() => el.treeWrap.style.display === 'flex');
   assert.deepEqual(log.released, ['D1']);
   assert.equal(log.progressOff, 1);
 });
@@ -257,14 +266,13 @@ test('panel: cancel while uploading stops the upload and never runs', async () =
   let adds = 0;
   const { log } = fakeDt({ dt: { addDuplicateCandidates: async () => { adds++; await gate.promise; return { ok: true }; } } });
   const p = dups.renderDuplicatesPanel();
-  await tick();
+  await until(() => adds === 1);
   nodes['dup-btn-cancel'].listeners.click();
   gate.resolve();
   await p;
-  await tick();
+  await until(() => el.treeWrap.style.display === 'flex');
   assert.equal(adds, 1);
   assert.equal(log.calls.includes('run'), false);
-  assert.equal(el.treeWrap.style.display, 'flex');
   assert.deepEqual(log.released, ['D1']);
 });
 
@@ -277,7 +285,7 @@ test('panel: a stale reply of an older run is ignored; the newer run keeps its l
     dt: { runDuplicates: (id) => (++runs === 1 ? gate.promise : Promise.resolve({ ok: true, cancelled: false, groupCount: 0, chunkCount: 0 })) },
   });
   const first = dups.renderDuplicatesPanel();
-  await tick();
+  await until(() => runs === 1);
   await dups.renderDuplicatesPanel(); // newer run finishes first
   assert.match(body(), /No duplicate files found/);
   assert.equal(log.progressOff, 1);
@@ -285,7 +293,7 @@ test('panel: a stale reply of an older run is ignored; the newer run keeps its l
   el.treeWrap.style.display = 'none';
   gate.resolve({ ok: false, error: 'old failure' });
   await first;
-  await tick();
+  await settle();
   assert.equal(body(), 'NEWER');           // the stale reply did not render
   assert.equal(el.treeWrap.style.display, 'none');
   assert.equal(log.progressOff, 1);         // and did not remove the newer run's listener
@@ -298,12 +306,12 @@ test('panel: a stale cancelled reply of an older run does not send the user to t
   let runs = 0;
   fakeDt({ result: [], dt: { runDuplicates: () => (++runs === 1 ? gate.promise : Promise.resolve({ ok: true, cancelled: false, groupCount: 0, chunkCount: 0 })) } });
   const first = dups.renderDuplicatesPanel();
-  await tick();
+  await until(() => runs === 1);
   await dups.renderDuplicatesPanel();
   el.treeWrap.style.display = 'none';
   gate.resolve({ ok: false, cancelled: true });
   await first;
-  await tick();
+  await settle();
   assert.equal(el.treeWrap.style.display, 'none');
 });
 
@@ -338,12 +346,12 @@ test('panel: a begin that fails after a newer run took over does not touch the n
   let begins = 0;
   const { log } = fakeDt({ result: [], dt: { beginDuplicates: () => (++begins === 1 ? gate.promise : Promise.resolve({ ok: true, id: 'D1' })) } });
   const first = dups.renderDuplicatesPanel();
-  await tick();
+  await until(() => begins === 1);
   await dups.renderDuplicatesPanel();
   nodes['dup-body'].innerHTML = 'NEWER';
   gate.resolve({ ok: false, error: 'old failure' });
   await first;
-  await tick();
+  await settle();
   assert.equal(body(), 'NEWER');
   assert.equal(log.progressOff, 1);
 });
