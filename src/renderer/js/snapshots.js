@@ -1,6 +1,7 @@
 import { S } from './state.js';
 import { el } from './elements.js';
 import { fmt, fmtDate } from './format.js';
+import { flattenTree, chunkCount, sliceChunk } from './treeTransfer.js';
 
 let snapshotList = [];
 
@@ -31,7 +32,8 @@ export async function renderSnapshotsPanel() {
     if (!S.tree || !S.rootPath) return;
     const btn = document.getElementById('snap-btn-save');
     if (btn) btn.disabled = true;
-    const res = await window.dt.saveSnapshot({ tree: S.tree, rootPath: S.rootPath });
+    const res = await saveSnapshotChunked(S.tree, S.rootPath);
+    if (btn) btn.disabled = false;
     if (res.ok) {
       loadSnapshotsList();
     } else {
@@ -40,6 +42,29 @@ export async function renderSnapshotsPanel() {
   });
 
   loadSnapshotsList();
+}
+
+// Upload the tree in bounded chunks; one huge IPC message would crash the app.
+async function saveSnapshotChunked(tree, rootPath) {
+  let uploadId = null;
+  try {
+    const flat = flattenTree(tree);
+    const begin = await window.dt.saveSnapshotBegin({ rootPath, nodeCount: flat.nodes.length });
+    if (!begin.ok) return begin;
+    uploadId = begin.uploadId;
+    const n = chunkCount(flat.nodes.length);
+    for (let i = 0; i < n; i++) {
+      const res = await window.dt.saveSnapshotChunk(uploadId, sliceChunk(flat, i));
+      if (!res.ok) throw new Error(res.error || 'Unknown');
+    }
+    const done = await window.dt.saveSnapshotCommit(uploadId);
+    uploadId = null; // commit consumes the upload, success or not
+    return done;
+  } catch (err) {
+    return { ok: false, error: err.message };
+  } finally {
+    if (uploadId) window.dt.saveSnapshotAbort(uploadId);
+  }
 }
 
 async function loadSnapshotsList() {

@@ -3,11 +3,14 @@ const fs   = require('fs');
 const path = require('path');
 const { promisify } = require('util');
 const { ipcMain } = require('electron');
+const { stateFor, existingState } = require('../senderState');
+const { flattenTree, chunkCount, sliceChunk } = require('../treeTransfer');
 
 const readdirAsync = promisify(fs.readdir);
 const lstatAsync   = promisify(fs.lstat);
 
-const activeScans = new Map();
+// The whole tree must never travel in one IPC message (V8 serializer limit ~2 GB): a finished
+// scan is kept per window (senderState) and pulled in chunks by fs:scanChunk.
 let yieldCounter  = 0;
 
 function align(bytes, block = 4096) {
@@ -104,27 +107,55 @@ async function scanNode(nodePath, sender, scanId, ctrl, seenInodes) {
   return node;
 }
 
+// The caller's finished scan, if scanId is its current one.
+function ownTransfer(event, scanId) {
+  const st = existingState(event.sender);
+  return st && st.transfer && st.transfer.id === scanId ? st : null;
+}
+
 module.exports = function registerScannerIpc() {
   ipcMain.handle('fs:scan', async (event, dirPath, scanId) => {
     if (!scanId) scanId = `${Date.now()}`;
-    const ctrl = { cancelled: false };
-    activeScans.set(scanId, ctrl);
+    const st   = stateFor(event.sender);
+    const scan = { id: scanId, ctrl: { cancelled: false } };
+    if (st.scan) st.scan.ctrl.cancelled = true;
+    st.scan = scan;
+    st.transfer = null;
     yieldCounter = 0;
 
     try {
       const seenInodes = new Set();
-    const data = await scanNode(dirPath, event.sender, scanId, ctrl, seenInodes);
-      activeScans.delete(scanId);
-      if (!data) return { ok: false, cancelled: true };
-      return { ok: true, data, scanId };
+      const data = await scanNode(dirPath, event.sender, scanId, scan.ctrl, seenInodes);
+      // Keep the result only if this scan is still the window's current one and the window lives.
+      const current = !scan.ctrl.cancelled && !event.sender.isDestroyed();
+      if (st.scan === scan) st.scan = null;
+      if (!data || !current) return { ok: false, cancelled: true };
+      const flat = flattenTree(data);
+      st.transfer = { id: scanId, flat };
+      return { ok: true, scanId, nodeCount: flat.nodes.length, chunkCount: chunkCount(flat.nodes.length) };
     } catch (err) {
-      activeScans.delete(scanId);
+      if (st.scan === scan) st.scan = null;
       return { ok: false, error: err.message };
     }
   });
 
-  ipcMain.handle('fs:cancelScan', (_, scanId) => {
-    const ctrl = activeScans.get(scanId);
-    if (ctrl) ctrl.cancelled = true;
+  ipcMain.handle('fs:scanChunk', (event, scanId, index) => {
+    const st = ownTransfer(event, scanId);
+    if (!st) return { ok: false, error: 'Scan result is no longer available' };
+    const chunk = sliceChunk(st.transfer.flat, index);
+    if (!chunk) return { ok: false, error: 'Invalid chunk index' };
+    return { ok: true, nodes: chunk.nodes, parents: chunk.parents };
+  });
+
+  ipcMain.handle('fs:releaseScan', (event, scanId) => {
+    const st = ownTransfer(event, scanId);
+    if (st) st.transfer = null;
+  });
+
+  ipcMain.handle('fs:cancelScan', (event, scanId) => {
+    const st = existingState(event.sender);
+    if (!st) return;
+    if (st.scan && st.scan.id === scanId) st.scan.ctrl.cancelled = true;
+    if (st.transfer && st.transfer.id === scanId) st.transfer = null;
   });
 };

@@ -3,6 +3,7 @@ import { el } from './elements.js';
 import { fmt } from './format.js';
 import { updateStatusBar } from './statusBar.js';
 import { rebuildRows, VS } from './tree.js';
+import { rebuildTree } from './treeTransfer.js';
 
 // ── State visibility ──────────────────────────────────────────────────────────
 export function showState(s) {
@@ -62,21 +63,61 @@ export async function triggerScan(dirPath) {
   setToolbarBusy(true);
   updateStatusBar('Scanning…', p);
 
-  const result = await window.dt.scan(p, S.scanId);
-
-  S.scanning = false;
-  S.scanId   = null;
-  setToolbarBusy(false);
+  const myScanId = S.scanId;
+  const result = await window.dt.scan(p, myScanId);
 
   window.dt.trackEvent('scan_start', { path: p });
 
+  if (S.scanId !== myScanId) {
+    // superseded (or cancelled) while the main process was scanning
+    if (result.ok) window.dt.releaseScan(result.scanId);
+    return;
+  }
+
   if (!result.ok) {
+    S.scanning = false;
+    S.scanId   = null;
+    setToolbarBusy(false);
     updateStatusBar(result.cancelled ? 'Scan cancelled.' : `Error: ${result.error || 'Unknown'}`);
     showState(S.tree ? 'tree' : 'empty');
     return;
   }
 
-  S.tree   = result.data;
+  // The tree arrives in bounded chunks (one huge IPC message would crash the app).
+  // Stay in "scanning" state (cancel still works) until every chunk is in.
+  const stale = () => !S.scanning || S.scanId !== myScanId; // cancelled or superseded meanwhile
+  let tree;
+  try {
+    const chunks = [];
+    for (let i = 0; i < result.chunkCount; i++) {
+      const msg = `Loading results… ${i}/${result.chunkCount}`;
+      el.scanHeadline.textContent = msg;
+      updateStatusBar(msg, p);
+      const part = await window.dt.scanChunk(result.scanId, i);
+      if (stale()) return;
+      if (!part.ok) throw new Error(part.error || 'Unknown');
+      chunks.push(part);
+    }
+    tree = rebuildTree(chunks);
+    if (!tree || countNodes(tree) !== result.nodeCount) throw new Error('Scan result is incomplete');
+  } catch (err) {
+    if (!stale()) {
+      S.scanning = false;
+      S.scanId   = null;
+      setToolbarBusy(false);
+      updateStatusBar(`Error: ${err.message || 'Unknown'}`);
+      showState(S.tree ? 'tree' : 'empty');
+    }
+    return;
+  } finally {
+    window.dt.releaseScan(result.scanId); // free the main-process copy in every case
+  }
+
+  S.scanning = false;
+  S.scanId   = null;
+  setToolbarBusy(false);
+
+  S.tree   = tree;
   S.scanId = result.scanId;
   if (S.tree.isDir) S.expanded.add(S.tree.path);
 
@@ -93,6 +134,17 @@ export async function triggerScan(dirPath) {
     files: S.tree.files,
     elapsed_seconds: elapsed
   });
+}
+
+function countNodes(root) {
+  let n = 0;
+  const stack = [root];
+  while (stack.length) {
+    const node = stack.pop();
+    n++;
+    if (Array.isArray(node.children)) for (const c of node.children) stack.push(c);
+  }
+  return n;
 }
 
 export function cancelScan() {

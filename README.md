@@ -154,6 +154,8 @@ Available formats:
 - Node.js 18+
 - npm 9+
 
+Tests run with `npm test` and need Node.js ≥ 20.6 (the app itself is unchanged).
+
 ### Clone & Run
 
 Clone the repository, install dependencies, and run the app:
