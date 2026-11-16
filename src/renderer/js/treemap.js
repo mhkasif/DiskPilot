@@ -1,10 +1,10 @@
 import { S } from './state.js';
 import { el } from './elements.js';
 import { fmt } from './format.js';
+import { resolveChain, setViewPath, buildBreadcrumb, chartContextMenu } from './chartNav.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let _root   = null;   // node currently displayed as treemap root
-let _crumbs = [];     // breadcrumb stack of nodes
+let _root   = null;   // node currently displayed (resolved from S.viewPath on every render)
 
 // ── Zoom / Pan state ──────────────────────────────────────────────────────────
 let _zoom      = { scale: 1, tx: 0, ty: 0 };
@@ -27,16 +27,15 @@ export function setupTreemap() {
   _setupZoom();
 }
 
+// Called when the treemap is (re)entered: zoom starts fresh, the folder comes from S.viewPath.
 export function initTreemap() {
-  _root   = null;
-  _crumbs = [];
   _resetZoom(false);
 }
 
 export function renderTreemap() {
   if (!S.tree) return;
-  if (!_root) _drillTo(S.tree);
-  else        _render();
+  _render();
+  _buildBreadcrumb();
 }
 
 // ── Zoom helpers ──────────────────────────────────────────────────────────────
@@ -115,47 +114,21 @@ function _setupZoom() {
 // ── Drill-down helpers ────────────────────────────────────────────────────────
 function _drillTo(node) {
   _resetZoom(false);
-  _crumbs.push(node);
-  _root = node;
-  _render();
-  _buildBreadcrumb();
-}
-
-function _crumbTo(idx) {
-  _resetZoom(false);
-  _crumbs = _crumbs.slice(0, idx + 1);
-  _root   = _crumbs[_crumbs.length - 1];
-  _render();
-  _buildBreadcrumb();
+  setViewPath(node.path);
+  renderTreemap();
 }
 
 // ── Breadcrumb ────────────────────────────────────────────────────────────────
 function _buildBreadcrumb() {
-  el.chartBreadcrumb.innerHTML = '';
-  _crumbs.forEach((node, i) => {
-    const span  = document.createElement('span');
-    const label = (i === 0 && !node.name) ? node.path : node.name;
-    span.textContent = label;
-    if (i < _crumbs.length - 1) {
-      span.className = 'crumb';
-      span.addEventListener('click', () => _crumbTo(i));
-    } else {
-      span.className = 'crumb current';
-    }
-    el.chartBreadcrumb.appendChild(span);
-    if (i < _crumbs.length - 1) {
-      const sep = document.createElement('span');
-      sep.className   = 'crumb-sep';
-      sep.textContent = ' ›';
-      el.chartBreadcrumb.appendChild(sep);
-    }
-  });
+  buildBreadcrumb(el.chartBreadcrumb, resolveChain(), _drillTo);
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
 function _render() {
   const container = el.treemapContainer;
   container.innerHTML = '';
+  const chain = resolveChain();
+  _root = chain.length ? chain[chain.length - 1] : null;
 
   // Re-create zoom reset button (cleared by innerHTML above)
   _zoomBtn = document.createElement('button');
@@ -250,6 +223,11 @@ function _render() {
         e.stopPropagation();
       });
     }
+
+    g.addEventListener('contextmenu', e => {
+      _isPanning = false; _panStart = null;   // a right-click is never a pan
+      chartContextMenu(e, node);
+    });
 
     svg.appendChild(g);
   }

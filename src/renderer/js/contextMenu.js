@@ -4,8 +4,13 @@ import { selectPath } from './tree.js';
 import { deleteSelected } from './fileops.js';
 import { flashStatus } from './statusBar.js';
 
-export function showCtx(e, node) {
+// opts.hideDelete: chart views hide the Delete item (and its separator) because charts do not
+// re-render after a delete. Every call sets the state, so the tree view gets Delete back.
+export function showCtx(e, node, opts = {}) {
   e.preventDefault(); e.stopPropagation();
+  for (const n of el.ctxMenu.querySelectorAll('[data-hide-in-chart]')) {
+    n.style.display = opts.hideDelete ? 'none' : '';
+  }
   // If right-clicking outside the current selection, reset to just this item
   if (!S.selectedSet.has(node.path)) {
     selectPath(node.path);
