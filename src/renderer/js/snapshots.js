@@ -1,9 +1,10 @@
 import { S } from './state.js';
 import { el } from './elements.js';
 import { fmt, fmtDate } from './format.js';
-import { flattenTree, chunkCount, sliceChunk } from './treeTransfer.js';
+import { flattenTree, chunkCount, sliceChunk, rebuildTree, countNodes } from './treeTransfer.js';
 
 let snapshotList = [];
+let comparing = false; // a snapshot comparison is running (one at a time)
 
 export async function renderSnapshotsPanel() {
   el.featurePanel.innerHTML = `
@@ -64,6 +65,30 @@ async function saveSnapshotChunked(tree, rootPath) {
     return { ok: false, error: err.message };
   } finally {
     if (uploadId) window.dt.saveSnapshotAbort(uploadId);
+  }
+}
+
+// Pull a snapshot's tree in bounded chunks; one huge IPC message would crash the app.
+// Resolves to { ok:true, data:{ id, rootPath, savedAt, version, tree } } or { ok:false, error }.
+export async function loadSnapshotChunked(id) {
+  let loadId = null;
+  try {
+    const begin = await window.dt.loadSnapshot(id);
+    if (!begin.ok) return begin;
+    loadId = begin.loadId;
+    const chunks = [];
+    for (let i = 0; i < begin.chunkCount; i++) {
+      const part = await window.dt.loadSnapshotChunk(loadId, i);
+      if (!part.ok) throw new Error(part.error || 'Unknown');
+      chunks.push(part);
+    }
+    const tree = rebuildTree(chunks);
+    if (countNodes(tree) !== begin.nodeCount) throw new Error('Snapshot is incomplete');
+    return { ok: true, data: { ...begin.meta, tree } };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  } finally {
+    if (loadId) window.dt.loadSnapshotRelease(loadId); // free the main-process copy in every case
   }
 }
 
@@ -154,7 +179,7 @@ function renderSnapshotListUI() {
       }
 
       const cmpBtn = document.getElementById('snap-btn-compare');
-      if (cmpBtn) cmpBtn.disabled = selectedSnapIds.size !== 2;
+      if (cmpBtn) cmpBtn.disabled = comparing || selectedSnapIds.size !== 2;
     });
 
     row.querySelector('.snap-btn-del').addEventListener('click', async () => {
@@ -167,20 +192,28 @@ function renderSnapshotListUI() {
 
   document.getElementById('snap-btn-compare')?.addEventListener('click', async () => {
     const ids = Array.from(selectedSnapIds);
-    if (ids.length !== 2) return;
+    if (comparing || ids.length !== 2) return;
 
-    // Load both snapshots
-    const resA = await window.dt.loadSnapshot(ids[0]);
-    const resB = await window.dt.loadSnapshot(ids[1]);
+    // Load both snapshots (button disabled meanwhile: one comparison at a time)
+    const btn = document.getElementById('snap-btn-compare');
+    comparing = true;
+    btn.disabled = true;
+    try {
+      const resA = await loadSnapshotChunked(ids[0]);
+      const resB = await loadSnapshotChunked(ids[1]);
 
-    if (resA.ok && resB.ok) {
-      // Ensure older snapshot is A and newer is B
-      let snapA = resA.data;
-      let snapB = resB.data;
-      if (snapA.savedAt > snapB.savedAt) {
-        const tmp = snapA; snapA = snapB; snapB = tmp;
+      if (resA.ok && resB.ok) {
+        // Ensure older snapshot is A and newer is B
+        let snapA = resA.data;
+        let snapB = resB.data;
+        if (snapA.savedAt > snapB.savedAt) {
+          const tmp = snapA; snapA = snapB; snapB = tmp;
+        }
+        runTreeDiff(snapA, snapB);
       }
-      runTreeDiff(snapA, snapB);
+    } finally {
+      comparing = false;
+      btn.disabled = selectedSnapIds.size !== 2;
     }
   });
 }

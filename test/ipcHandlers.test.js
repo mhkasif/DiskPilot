@@ -596,3 +596,245 @@ test('cancelScan right after a scan of a single file discards the finished resul
   assert.equal((await call('fs:scanChunk', A, 'sc-single', 0)).ok, false);
   assert.equal(existingState(A).transfer, null);
 });
+
+// ── snapshot:load (chunked) ──────────────────────────────────────────────────
+function writeSnap(id, tree, extra = {}) {
+  const dir = path.join(USER_DATA, 'snapshots');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify({ version: '9.9.9', id, rootPath: '/r', savedAt: 123, tree, ...extra }));
+}
+async function pullSnap(sender, res) {
+  const chunks = [];
+  for (let i = 0; i < res.chunkCount; i++) {
+    const part = await call('snapshot:loadChunk', sender, res.loadId, i);
+    assert.equal(part.ok, true);
+    chunks.push(part);
+  }
+  return chunks;
+}
+const snapTree = () => ({ ...d('root', [f('a', 5), d('sub', [f('b', 7)])]) });
+
+test('snapshot:load reply has only meta and scalar fields, no tree', async () => {
+  writeSnap('snap-9001', snapTree());
+  const S = new Sender(200);
+  const res = await call('snapshot:load', S, 'snap-9001');
+  assert.deepEqual(Object.keys(res).sort(), ['chunkCount', 'loadId', 'meta', 'nodeCount', 'ok']);
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.meta, { id: 'snap-9001', rootPath: '/r', savedAt: 123, version: '9.9.9' });
+  assert.equal(res.nodeCount, 4);
+  assert.equal(res.chunkCount, 1);
+  assert.equal(typeof res.loadId, 'string');
+});
+
+test('snapshot chunks rebuild to the saved tree', async () => {
+  writeSnap('snap-9002', snapTree());
+  const S = new Sender(201);
+  const res = await call('snapshot:load', S, 'snap-9002');
+  assert.deepEqual(rebuildTree(await pullSnap(S, res)), snapTree());
+});
+
+test('a snapshot larger than CHUNK_SIZE comes in bounded chunks that rebuild', async () => {
+  const kids = [];
+  for (let i = 0; i < CHUNK_SIZE; i++) kids.push(f(`k${i}`, 1));
+  const tree = d('root', kids);
+  writeSnap('snap-9003', tree);
+  const S = new Sender(202);
+  const res = await call('snapshot:load', S, 'snap-9003');
+  assert.equal(res.nodeCount, CHUNK_SIZE + 1);
+  assert.equal(res.chunkCount, 2);
+  const chunks = await pullSnap(S, res);
+  assert.equal(chunks[0].nodes.length, CHUNK_SIZE);
+  assert.equal(chunks[1].nodes.length, 1);
+  assert.deepEqual(rebuildTree(chunks), tree);
+});
+
+test('a snapshot with exactly CHUNK_SIZE nodes is one chunk', async () => {
+  const kids = [];
+  for (let i = 0; i < CHUNK_SIZE - 1; i++) kids.push(f(`k${i}`, 1));
+  writeSnap('snap-9004', d('root', kids));
+  const res = await call('snapshot:load', new Sender(203), 'snap-9004');
+  assert.equal(res.nodeCount, CHUNK_SIZE);
+  assert.equal(res.chunkCount, 1);
+});
+
+test('chunk replies carry exactly ok, nodes and parents', async () => {
+  writeSnap('snap-9005', snapTree());
+  const S = new Sender(204);
+  const res = await call('snapshot:load', S, 'snap-9005');
+  const part = await call('snapshot:loadChunk', S, res.loadId, 0);
+  assert.deepEqual(Object.keys(part).sort(), ['nodes', 'ok', 'parents']);
+});
+
+test('two loads at once in one window are independent (compare)', async () => {
+  writeSnap('snap-9006', snapTree());
+  writeSnap('snap-9007', d('other', []));
+  const S = new Sender(205);
+  const a = await call('snapshot:load', S, 'snap-9006');
+  const b = await call('snapshot:load', S, 'snap-9007');
+  assert.notEqual(a.loadId, b.loadId);
+  assert.deepEqual(rebuildTree(await pullSnap(S, a)), snapTree());
+  assert.deepEqual(rebuildTree(await pullSnap(S, b)), d('other', []));
+});
+
+test('loadRelease frees only that load', async () => {
+  writeSnap('snap-9008', snapTree());
+  const S = new Sender(206);
+  const a = await call('snapshot:load', S, 'snap-9008');
+  const b = await call('snapshot:load', S, 'snap-9008');
+  await call('snapshot:loadRelease', S, a.loadId);
+  assert.equal((await call('snapshot:loadChunk', S, a.loadId, 0)).ok, false);
+  assert.equal((await call('snapshot:loadChunk', S, b.loadId, 0)).ok, true);
+  assert.equal(existingState(S).loads.size, 1);
+});
+
+test('serving the last chunk does not free the load (release does)', async () => {
+  writeSnap('snap-9009', snapTree());
+  const S = new Sender(207);
+  const res = await call('snapshot:load', S, 'snap-9009');
+  assert.equal((await call('snapshot:loadChunk', S, res.loadId, 0)).ok, true);
+  assert.equal((await call('snapshot:loadChunk', S, res.loadId, 0)).ok, true);
+  assert.equal(existingState(S).loads.size, 1);
+});
+
+test('a load is not reachable from another window', async () => {
+  writeSnap('snap-9010', snapTree());
+  const A = new Sender(208), B = new Sender(209);
+  const res = await call('snapshot:load', A, 'snap-9010');
+  assert.equal((await call('snapshot:loadChunk', B, res.loadId, 0)).ok, false);
+  await call('snapshot:loadRelease', B, res.loadId); // must not free A's load
+  assert.equal((await call('snapshot:loadChunk', A, res.loadId, 0)).ok, true);
+});
+
+test('loadChunk with a bad index or unknown load returns ok:false with a message', async () => {
+  writeSnap('snap-9011', snapTree());
+  const S = new Sender(210);
+  const res = await call('snapshot:load', S, 'snap-9011');
+  for (const bad of [-1, 1, 1.5, '0', null, undefined]) {
+    const r = await call('snapshot:loadChunk', S, res.loadId, bad);
+    assert.deepEqual(r, { ok: false, error: 'Invalid chunk index' });
+  }
+  assert.deepEqual(await call('snapshot:loadChunk', S, 'nope', 0), { ok: false, error: 'Snapshot load is no longer available' });
+  assert.deepEqual(await call('snapshot:loadChunk', new Sender(211), res.loadId, 0), { ok: false, error: 'Snapshot load is no longer available' });
+});
+
+test('loadRelease of an unknown load or a window without state is harmless', async () => {
+  const S = new Sender(212);
+  await call('snapshot:loadRelease', S, 'nope');
+  assert.equal(existingState(S), undefined);
+});
+
+test('destroyed window drops its loads', async () => {
+  writeSnap('snap-9012', snapTree());
+  const S = new Sender(213);
+  const res = await call('snapshot:load', S, 'snap-9012');
+  S.emit('destroyed');
+  assert.equal((await call('snapshot:loadChunk', S, res.loadId, 0)).ok, false);
+  assert.equal(existingState(S), undefined);
+});
+
+test('render-process-gone drops its loads', async () => {
+  writeSnap('snap-9013', snapTree());
+  const S = new Sender(214);
+  const res = await call('snapshot:load', S, 'snap-9013');
+  S.emit('render-process-gone', {}, { reason: 'crashed' });
+  assert.equal((await call('snapshot:loadChunk', S, res.loadId, 0)).ok, false);
+});
+
+test('loading a missing snapshot returns ok:false and keeps no load', async () => {
+  const S = new Sender(215);
+  const r = await call('snapshot:load', S, 'snap-does-not-exist');
+  assert.equal(r.ok, false);
+  assert.equal(typeof r.error, 'string');
+  assert.equal(r.loadId, undefined);
+  assert.equal(existingState(S) ? existingState(S).loads.size : 0, 0);
+});
+
+test('loading a corrupt snapshot returns ok:false', async () => {
+  fs.writeFileSync(path.join(USER_DATA, 'snapshots', 'snap-9014.json'), '{nope');
+  const r = await call('snapshot:load', new Sender(216), 'snap-9014');
+  assert.equal(r.ok, false);
+  assert.equal(typeof r.error, 'string');
+});
+
+test('a snapshot without a tree loads as zero nodes', async () => {
+  writeSnap('snap-9015', null);
+  const S = new Sender(217);
+  const res = await call('snapshot:load', S, 'snap-9015');
+  assert.equal(res.ok, true);
+  assert.equal(res.nodeCount, 0);
+  assert.equal(res.chunkCount, 0);
+  assert.equal(rebuildTree(await pullSnap(S, res)), null);
+});
+
+test('load ids are unique per call', async () => {
+  writeSnap('snap-9016', snapTree());
+  const S = new Sender(218);
+  const ids = new Set();
+  for (let i = 0; i < 5; i++) ids.add((await call('snapshot:load', S, 'snap-9016')).loadId);
+  assert.equal(ids.size, 5);
+});
+
+test('a window gets one state and one pair of listeners across loads', async () => {
+  writeSnap('snap-9017', snapTree());
+  const S = new Sender(219);
+  for (let i = 0; i < 3; i++) {
+    const r = await call('snapshot:load', S, 'snap-9017');
+    await call('snapshot:loadRelease', S, r.loadId);
+  }
+  assert.equal(S.listenerCount('destroyed'), 1);
+  assert.equal(S.listenerCount('render-process-gone'), 1);
+});
+
+test('preload exposes the snapshot load calls on their channels', async () => {
+  const invoked = [];
+  let exposed;
+  const stub = {
+    contextBridge: { exposeInMainWorld: (_, api) => { exposed = api; } },
+    ipcRenderer: { sendSync: () => '0', invoke: (...a) => { invoked.push(a); return 'r'; }, on() {}, removeAllListeners() {} },
+  };
+  const realLoad = Module._load;
+  Module._load = function (request, ...rest) { return request === 'electron' ? stub : realLoad.call(this, request, ...rest); };
+  try { require(path.join(ROOT, 'src/preload/index.js')); } finally { Module._load = realLoad; }
+  assert.equal(exposed.loadSnapshot('snap-1'), 'r');
+  assert.equal(exposed.loadSnapshotChunk('ld-1', 2), 'r');
+  assert.equal(exposed.loadSnapshotRelease('ld-1'), 'r');
+  assert.deepEqual(invoked, [['snapshot:load', 'snap-1'], ['snapshot:loadChunk', 'ld-1', 2], ['snapshot:loadRelease', 'ld-1']]);
+});
+
+test('dropping a window state empties its loads', async () => {
+  writeSnap('snap-9018', snapTree());
+  const S = new Sender(220);
+  await call('snapshot:load', S, 'snap-9018');
+  const st = existingState(S);
+  assert.equal(st.loads.size, 1);
+  S.emit('destroyed');
+  assert.equal(st.loads.size, 0);
+});
+
+test('a window that crashes while its snapshot is being read gets no load', async () => {
+  writeSnap('snap-9019', snapTree());
+  const S = new Sender(221);
+  const p = call('snapshot:load', S, 'snap-9019');
+  S.emit('render-process-gone', {}, { reason: 'crashed' }); // state dropped mid-await
+  assert.deepEqual(await p, { ok: false, error: 'Window is gone' });
+  assert.equal(existingState(S), undefined);
+});
+
+test('a window destroyed while its snapshot is being read gets no load', async () => {
+  writeSnap('snap-9020', snapTree());
+  const S = new Sender(222);
+  const p = call('snapshot:load', S, 'snap-9020');
+  S._gone = true;
+  assert.deepEqual(await p, { ok: false, error: 'Window is gone' });
+  S._gone = false;
+  assert.equal(existingState(S).loads.size, 0);
+});
+
+test('snapshot:load from an already destroyed sender resolves ok:false instead of rejecting', async () => {
+  const S = new DyingSender(223);
+  S._dead = true;
+  writeSnap('snap-9021', snapTree());
+  const r = await call('snapshot:load', S, 'snap-9021');
+  assert.equal(r.ok, false);
+  assert.equal(typeof r.error, 'string');
+});

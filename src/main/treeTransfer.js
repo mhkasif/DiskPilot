@@ -32,6 +32,18 @@ function flattenTree(root) {
   return { nodes, parents };
 }
 
+// Number of nodes in a tree (0 for a null root); iterative, like flattenTree.
+function countNodes(root) {
+  let n = 0;
+  const stack = root ? [root] : [];
+  while (stack.length) {
+    const node = stack.pop();
+    n++;
+    if (Array.isArray(node.children)) for (const c of node.children) stack.push(c);
+  }
+  return n;
+}
+
 function chunkCount(nodeCount, chunkSize = CHUNK_SIZE) {
   return Math.ceil(nodeCount / chunkSize);
 }
@@ -79,4 +91,4 @@ function rebuildTree(chunks) {
   return all.length ? all[0] : null;
 }
 
-module.exports = { CHUNK_SIZE, flattenTree, chunkCount, sliceChunk, rebuildTree };
+module.exports = { CHUNK_SIZE, flattenTree, countNodes, chunkCount, sliceChunk, rebuildTree };

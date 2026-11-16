@@ -3,7 +3,7 @@ import { el } from './elements.js';
 import { fmt } from './format.js';
 import { updateStatusBar } from './statusBar.js';
 import { rebuildRows, VS } from './tree.js';
-import { rebuildTree } from './treeTransfer.js';
+import { rebuildTree, countNodes } from './treeTransfer.js';
 
 // ── State visibility ──────────────────────────────────────────────────────────
 export function showState(s) {
@@ -134,17 +134,6 @@ export async function triggerScan(dirPath) {
     files: S.tree.files,
     elapsed_seconds: elapsed
   });
-}
-
-function countNodes(root) {
-  let n = 0;
-  const stack = [root];
-  while (stack.length) {
-    const node = stack.pop();
-    n++;
-    if (Array.isArray(node.children)) for (const c of node.children) stack.push(c);
-  }
-  return n;
 }
 
 export function cancelScan() {

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { app, ipcMain } = require('electron');
 const { stateFor, existingState } = require('../senderState');
-const { CHUNK_SIZE, rebuildTree } = require('../treeTransfer');
+const { CHUNK_SIZE, rebuildTree, flattenTree, chunkCount, sliceChunk } = require('../treeTransfer');
 
 function getSnapshotsDir() {
   const dir = path.join(app.getPath('userData'), 'snapshots');
@@ -44,6 +44,16 @@ let uploadCounter = 0;
 function ownUpload(event, uploadId) {
   const st = existingState(event.sender);
   return st ? st.uploads.get(uploadId) : undefined;
+}
+
+// Snapshot loads waiting to be pulled live in the calling window's state too:
+// loadId -> { flat }. Several may be open at once (compare loads two).
+let loadCounter = 0;
+
+// A load is only reachable from the window that began it.
+function ownLoad(event, loadId) {
+  const st = existingState(event.sender);
+  return st ? st.loads.get(loadId) : undefined;
 }
 
 module.exports = function registerSnapshotsIpc() {
@@ -138,16 +148,43 @@ module.exports = function registerSnapshotsIpc() {
     }
   });
 
-  ipcMain.handle('snapshot:load', async (_, id) => {
+  ipcMain.handle('snapshot:load', async (event, id) => {
+    let st;
     try {
+      st = stateFor(event.sender); // captured before the await: a crash during it drops this state
       const dir = getSnapshotsDir();
       const filePath = path.join(dir, `${id}.json`);
       const raw = await fs.promises.readFile(filePath, 'utf8');
       const data = JSON.parse(raw);
-      return { ok: true, data };
+      // Keep the load only if the window is alive and still has the state it began with.
+      if (event.sender.isDestroyed() || existingState(event.sender) !== st) {
+        return { ok: false, error: 'Window is gone' };
+      }
+      const flat = flattenTree(data.tree);
+      const loadId = `ld-${Date.now()}-${++loadCounter}`;
+      st.loads.set(loadId, { flat });
+      return {
+        ok: true,
+        meta: { id: data.id, rootPath: data.rootPath, savedAt: data.savedAt, version: data.version },
+        nodeCount: flat.nodes.length,
+        chunkCount: chunkCount(flat.nodes.length),
+        loadId,
+      };
     } catch (err) {
       return { ok: false, error: err.message };
     }
+  });
+
+  ipcMain.handle('snapshot:loadChunk', (event, loadId, index) => {
+    const load = ownLoad(event, loadId);
+    if (!load) return { ok: false, error: 'Snapshot load is no longer available' };
+    const chunk = sliceChunk(load.flat, index);
+    if (!chunk) return { ok: false, error: 'Invalid chunk index' };
+    return { ok: true, nodes: chunk.nodes, parents: chunk.parents };
+  });
+
+  ipcMain.handle('snapshot:loadRelease', (event, loadId) => {
+    if (ownLoad(event, loadId)) existingState(event.sender).loads.delete(loadId);
   });
 
   ipcMain.handle('snapshot:delete', async (_, id) => {
