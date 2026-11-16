@@ -3,10 +3,56 @@ import { el } from './elements.js';
 import { fmt, fmtDate } from './format.js';
 import { walkFiles } from './treewalk.js';
 import { removeFromTree } from './fileops.js';
+import { packItems } from './treeTransfer.js';
 
 let currentDupGroups = [];
 let selectedDupPaths = new Set();
 let dupSmartMode = 'newest'; // 'newest' | 'oldest' | 'shallowest'
+let activeRun = 0; // number of the newest duplicate search; older ones are stale
+
+// Upload the candidates, run the search in main and pull the result groups, all in bounded
+// chunks. `check` is asked after every await and returns a result object ({cancelled} or
+// {superseded}) to stop the search, else null. Returns {groups}, {error}, or that stop object.
+// The run is always released in main.
+export async function searchDuplicates(candidates, check) {
+  let id = null;
+  try {
+    const begin = await window.dt.beginDuplicates();
+    if (begin.ok) id = begin.id; // released below even if the search was stopped meanwhile
+    let stop = check();
+    if (stop) return stop;
+    if (!begin.ok) return { error: begin.error || 'Unknown error' };
+    for (const chunk of packItems(candidates, 'paths')) {
+      const res = await window.dt.addDuplicateCandidates(id, chunk);
+      stop = check();
+      if (stop) return stop;
+      if (!res.ok) return { error: res.error || 'Unknown error' };
+    }
+    const run = await window.dt.runDuplicates(id);
+    stop = check();
+    if (stop) return stop;
+    if (run.cancelled) return { cancelled: true };
+    if (!run.ok) return { error: run.error || 'Unknown error' };
+    const byIndex = new Map(); // a group can arrive split over several chunks; gi = its index in main
+    for (let i = 0; i < run.chunkCount; i++) {
+      const part = await window.dt.duplicateResultChunk(id, i);
+      stop = check();
+      if (stop) return stop;
+      if (!part.ok) return { error: part.error || 'Unknown error' };
+      for (const g of part.groups) {
+        const known = byIndex.get(g.gi);
+        if (known) for (const f of g.files) known.files.push(f);
+        else byIndex.set(g.gi, { hash: g.hash, size: g.size, files: [...g.files] });
+      }
+    }
+    if (byIndex.size !== run.groupCount) return { error: 'Duplicate result is incomplete' };
+    return { groups: [...byIndex.values()] };
+  } catch (err) {
+    return check() || { error: err.message || 'Unknown error' };
+  } finally {
+    if (id) window.dt.releaseDuplicates(id);
+  }
+}
 
 export async function renderDuplicatesPanel() {
   if (!S.tree) {
@@ -47,9 +93,13 @@ export async function renderDuplicatesPanel() {
     import('./scan.js').then(m => m.showState('tree'));
   });
 
+  const myRun = ++activeRun;
+  let cancelled = false;
   document.getElementById('dup-btn-cancel')?.addEventListener('click', () => {
+    cancelled = true;
     window.dt.cancelDuplicates();
   });
+  const check = () => (activeRun !== myRun ? { superseded: true } : cancelled ? { cancelled: true } : null);
 
   const sizeGroups = new Map();
   walkFiles(S.tree, (f) => {
@@ -78,17 +128,18 @@ export async function renderDuplicatesPanel() {
     }
   });
 
-  const res = await window.dt.findDuplicates(multiFileGroups);
+  const res = await searchDuplicates(multiFileGroups, check);
+  if (res.superseded) return; // a newer search owns the panel and the progress listener
   window.dt.offDupProgress();
 
-  if (!res.ok || !res.groups) {
-    if (res.cancelled) {
-      import('./scan.js').then(m => m.showState('tree'));
-      return;
-    }
+  if (res.cancelled) {
+    import('./scan.js').then(m => m.showState('tree'));
+    return;
+  }
+  if (res.error) {
     document.getElementById('dup-body').innerHTML = `
       <div class="panel-card" style="padding:20px; text-align:center;">
-        <p>No duplicates found or error scanning: ${res.error || 'Unknown error'}</p>
+        <p>No duplicates found or error scanning: ${res.error}</p>
       </div>
     `;
     return;

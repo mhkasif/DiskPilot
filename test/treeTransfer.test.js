@@ -203,6 +203,34 @@ function flatCount(root) {
   return c;
 }
 
+// ── packItems ────────────────────────────────────────────────────────────────
+for (const which of ['main', 'renderer']) {
+  const pk = (...a) => (which === 'main' ? main : renderer).packItems(...a);
+
+  test(`packItems (${which}): chunks hold at most chunkSize items, groups are split, pieces carry the group index`, () => {
+    const groups = [{ size: 1, paths: ['a', 'b'] }, { size: 2, paths: ['c', 'd', 'e', 'f', 'g'] }, { size: 3, paths: ['h', 'i'] }];
+    assert.deepEqual(pk(groups, 'paths', 3), [
+      [{ size: 1, paths: ['a', 'b'], gi: 0 }, { size: 2, paths: ['c'], gi: 1 }],
+      [{ size: 2, paths: ['d', 'e', 'f'], gi: 1 }],
+      [{ size: 2, paths: ['g'], gi: 1 }, { size: 3, paths: ['h', 'i'], gi: 2 }],
+    ]);
+    assert.deepEqual(groups[1].paths.length, 5); // input untouched
+  });
+
+  test(`packItems (${which}): the key is a parameter and other fields are kept`, () => {
+    assert.deepEqual(pk([{ hash: 'h', files: [1, 2, 3] }], 'files', 2), [
+      [{ hash: 'h', files: [1, 2], gi: 0 }], [{ hash: 'h', files: [3], gi: 0 }],
+    ]);
+  });
+
+  test(`packItems (${which}): no empty chunk on exact multiples or empty input; default size is CHUNK_SIZE`, () => {
+    assert.deepEqual(pk([{ p: ['a', 'b'] }, { p: ['c', 'd'] }], 'p', 2).map(c => c.length), [1, 1]);
+    assert.deepEqual(pk([], 'p', 2), []);
+    const big = pk([{ p: Array.from({ length: main.CHUNK_SIZE + 1 }, (_, i) => i) }], 'p');
+    assert.deepEqual(big.map(c => c[0].p.length), [main.CHUNK_SIZE, 1]);
+  });
+}
+
 // ── both copies are the same code ────────────────────────────────────────────
 test('main and renderer copies have identical logic', () => {
   const norm = (p) => fs.readFileSync(p, 'utf8')

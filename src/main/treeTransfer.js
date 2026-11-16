@@ -79,4 +79,25 @@ function rebuildTree(chunks) {
   return all.length ? all[0] : null;
 }
 
-module.exports = { CHUNK_SIZE, flattenTree, chunkCount, sliceChunk, rebuildTree };
+// Split `groups` (objects holding an array under `key`) into chunks holding at most chunkSize
+// array items in total. A group may be split over chunks: each piece is the group with a slice
+// of its array plus `gi`, the index of the group it came from (the receiver merges by `gi`).
+function packItems(groups, key, chunkSize = CHUNK_SIZE) {
+  const chunks = [];
+  let current = [];
+  let room = chunkSize;
+  for (let gi = 0; gi < groups.length; gi++) {
+    const items = groups[gi][key];
+    for (let i = 0; i < items.length;) {
+      const take = Math.min(room, items.length - i);
+      current.push({ ...groups[gi], [key]: items.slice(i, i + take), gi });
+      i += take;
+      room -= take;
+      if (room === 0) { chunks.push(current); current = []; room = chunkSize; }
+    }
+  }
+  if (current.length) chunks.push(current);
+  return chunks;
+}
+
+module.exports = { CHUNK_SIZE, flattenTree, chunkCount, sliceChunk, rebuildTree, packItems };
