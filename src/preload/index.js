@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld('dt', {
   getHomeDir   : ()  => ipcRenderer.invoke('fs:homeDir'),
   selectDir    : ()  => ipcRenderer.invoke('fs:selectDir'),
   scan         : (p, id) => ipcRenderer.invoke('fs:scan', p, id),
+  scanChunk    : (id, i) => ipcRenderer.invoke('fs:scanChunk', id, i),
+  releaseScan  : (id) => ipcRenderer.invoke('fs:releaseScan', id),
   cancelScan   : (id)=> ipcRenderer.invoke('fs:cancelScan', id),
 
   // ── file operations ───────────────────────────────────────────────────────
@@ -36,7 +38,10 @@ contextBridge.exposeInMainWorld('dt', {
   offJunkProgress: () => ipcRenderer.removeAllListeners('junk:progress'),
 
   // ── snapshots ──────────────────────────────────────────────────────────────
-  saveSnapshot  : (payload) => ipcRenderer.invoke('snapshot:save', payload),
+  saveSnapshotBegin : (meta) => ipcRenderer.invoke('snapshot:saveBegin', meta),
+  saveSnapshotChunk : (uploadId, chunk) => ipcRenderer.invoke('snapshot:saveChunk', uploadId, chunk),
+  saveSnapshotCommit: (uploadId) => ipcRenderer.invoke('snapshot:saveCommit', uploadId),
+  saveSnapshotAbort : (uploadId) => ipcRenderer.invoke('snapshot:saveAbort', uploadId),
   listSnapshots : () => ipcRenderer.invoke('snapshot:list'),
   loadSnapshot  : (id) => ipcRenderer.invoke('snapshot:load', id),
   deleteSnapshot: (id) => ipcRenderer.invoke('snapshot:delete', id),
