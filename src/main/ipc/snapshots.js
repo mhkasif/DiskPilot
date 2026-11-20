@@ -13,6 +13,12 @@ function getSnapshotsDir() {
   return dir;
 }
 
+// Snapshot ids are generated here (`snap-<ms>`); the renderer must send back exactly that shape,
+// because the id becomes part of a file path.
+const SNAPSHOT_ID = /^snap-\d+$/;
+const validSnapshotId = (id) => typeof id === 'string' && SNAPSHOT_ID.test(id);
+const INVALID_ID = { ok: false, error: 'Invalid snapshot id' };
+
 // Prune leaf nodes under 500 KB to keep JSON files compact
 function pruneNode(node) {
   if (!node) return null;
@@ -115,13 +121,14 @@ module.exports = function registerSnapshotsIpc() {
       const list = [];
 
       for (const f of files) {
-        if (!f.endsWith('.json')) continue;
+        const id = f.slice(0, -'.json'.length);
+        if (!f.endsWith('.json') || !validSnapshotId(id)) continue;
         try {
           const filePath = path.join(dir, f);
           const raw = await fs.promises.readFile(filePath, 'utf8');
           const data = JSON.parse(raw);
           list.push({
-            id: data.id || f.replace('.json', ''),
+            id,
             rootPath: data.rootPath,
             savedAt: data.savedAt,
             totalSize: data.tree ? data.tree.size : 0,
@@ -139,6 +146,7 @@ module.exports = function registerSnapshotsIpc() {
   });
 
   ipcMain.handle('snapshot:load', async (_, id) => {
+    if (!validSnapshotId(id)) return { ...INVALID_ID };
     try {
       const dir = getSnapshotsDir();
       const filePath = path.join(dir, `${id}.json`);
@@ -151,6 +159,7 @@ module.exports = function registerSnapshotsIpc() {
   });
 
   ipcMain.handle('snapshot:delete', async (_, id) => {
+    if (!validSnapshotId(id)) return { ...INVALID_ID };
     try {
       const dir = getSnapshotsDir();
       const filePath = path.join(dir, `${id}.json`);

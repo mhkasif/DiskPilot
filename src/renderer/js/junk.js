@@ -2,6 +2,7 @@ import { S } from './state.js';
 import { el } from './elements.js';
 import { fmt } from './format.js';
 import { removeFromTree } from './fileops.js';
+import { escapeHtml } from './escape.js';
 
 let currentJunkItems = [];
 let selectedJunkPaths = new Set();
@@ -22,7 +23,7 @@ export async function renderJunkPanel() {
     <div class="panel-body" id="junk-body">
       <div class="panel-card" style="padding:40px 20px; text-align:center;">
         <h3>Scanning for junk files &amp; build artifacts…</h3>
-        <p id="junk-progress-text" style="color:var(--text2); margin-top:8px;">Searching in ${targetPath}…</p>
+        <p id="junk-progress-text" style="color:var(--text2); margin-top:8px;">Searching in ${escapeHtml(targetPath)}…</p>
         <div class="progress-track" style="margin: 24px auto 0; width: 100%; max-width: 500px;"><div class="progress-bar indeterminate" id="junk-progress-bar"></div></div>
         <button class="panel-btn" id="junk-btn-cancel" style="margin-top:24px;">Cancel</button>
       </div>
@@ -52,7 +53,7 @@ export async function renderJunkPanel() {
     }
     document.getElementById('junk-body').innerHTML = `
       <div class="panel-card" style="padding:20px; text-align:center;">
-        <p>Error scanning junk files: ${res.error || 'Unknown error'}</p>
+        <p>Error scanning junk files: ${escapeHtml(res.error || 'Unknown error')}</p>
       </div>
     `;
     return;
@@ -137,9 +138,9 @@ function renderJunkResults() {
     row.innerHTML = `
       <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
         <input type="checkbox" class="junk-checkbox" data-path="${encodeURIComponent(item.path)}" ${isChecked ? 'checked' : ''} ${isReadOnly ? 'disabled' : ''} />
-        <span class="junk-badge ${badgeClass}">${item.category}</span>
-        <span style="font-weight:500;">${item.kind}</span>
-        <span style="color:var(--text3); font-family:monospace; font-size:11px; overflow:hidden; text-overflow:ellipsis;" title="${item.path}">${item.path}</span>
+        <span class="junk-badge ${badgeClass}">${escapeHtml(item.category)}</span>
+        <span style="font-weight:500;">${escapeHtml(item.kind)}</span>
+        <span style="color:var(--text3); font-family:monospace; font-size:11px; overflow:hidden; text-overflow:ellipsis;" title="${escapeHtml(item.path)}">${escapeHtml(item.path)}</span>
       </div>
       <div style="font-weight:600; white-space:nowrap; margin-left:16px;">
         ${fmt(item.size)}

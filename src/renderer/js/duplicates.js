@@ -3,6 +3,7 @@ import { el } from './elements.js';
 import { fmt, fmtDate } from './format.js';
 import { walkFiles } from './treewalk.js';
 import { removeFromTree } from './fileops.js';
+import { escapeHtml } from './escape.js';
 
 let currentDupGroups = [];
 let selectedDupPaths = new Set();
@@ -88,7 +89,7 @@ export async function renderDuplicatesPanel() {
     }
     document.getElementById('dup-body').innerHTML = `
       <div class="panel-card" style="padding:20px; text-align:center;">
-        <p>No duplicates found or error scanning: ${res.error || 'Unknown error'}</p>
+        <p>No duplicates found or error scanning: ${escapeHtml(res.error || 'Unknown error')}</p>
       </div>
     `;
     return;
@@ -223,7 +224,7 @@ function renderGroupResults() {
         row.innerHTML = `
           <div class="dup-item-info">
             <input type="checkbox" class="dup-checkbox" data-path="${encodeURIComponent(file.path)}" data-gidx="${gIdx}" ${isChecked ? 'checked' : ''} />
-            <span class="dup-item-path" title="${file.path}">${file.path}</span>
+            <span class="dup-item-path" title="${escapeHtml(file.path)}">${escapeHtml(file.path)}</span>
           </div>
           <div class="dup-item-meta">
             ${fmtDate(file.mtime)}
@@ -321,7 +322,7 @@ async function showThumbnailPreview(rowEl, path) {
 
   strip = document.createElement('div');
   strip.className = 'dup-thumb-strip';
-  strip.innerHTML = `<img class="dup-thumb" src="${dataUrl}" alt="Preview" /> <span style="font-size:11px; color:var(--text2);">${path}</span>`;
+  strip.innerHTML = `<img class="dup-thumb" src="${escapeHtml(dataUrl)}" alt="Preview" /> <span style="font-size:11px; color:var(--text2);">${escapeHtml(path)}</span>`;
   rowEl.parentNode.insertBefore(strip, rowEl.nextSibling);
 }
 
