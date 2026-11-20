@@ -25,7 +25,11 @@ contextBridge.exposeInMainWorld('dt', {
   quickLook    : (p) => ipcRenderer.invoke('fs:quickLook', p),
 
   // ── duplicates ─────────────────────────────────────────────────────────────
-  findDuplicates  : (candidates) => ipcRenderer.invoke('dup:find', candidates),
+  beginDuplicates : () => ipcRenderer.invoke('dup:begin'),
+  addDuplicateCandidates: (id, groups) => ipcRenderer.invoke('dup:addCandidates', id, groups),
+  runDuplicates   : (id) => ipcRenderer.invoke('dup:run', id),
+  duplicateResultChunk: (id, i) => ipcRenderer.invoke('dup:resultChunk', id, i),
+  releaseDuplicates: (id) => ipcRenderer.invoke('dup:release', id),
   cancelDuplicates: () => ipcRenderer.invoke('dup:cancel'),
   getThumbnail    : (p) => ipcRenderer.invoke('dup:thumbnail', p),
   onDupProgress   : (cb) => ipcRenderer.on('dup:progress', (_, d) => cb(d)),

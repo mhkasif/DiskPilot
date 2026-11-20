@@ -199,11 +199,23 @@ test('toplist: Delete button reads the exact original path back from data-path',
 });
 
 // ── duplicates.js ────────────────────────────────────────────────────────────
-function dupWindow(over = {}) {
+// `findDuplicates` (one reply: { ok, groups } or { ok:false, error }) is served through the
+// chunked duplicate API (begin / addCandidates / run / resultChunk / release).
+function dupWindow({ findDuplicates = async () => ({ ok: true, groups: [] }), ...over } = {}) {
+  let groups = [];
   globalThis.window = {
     dt: {
       onDupProgress() {}, offDupProgress() {}, cancelDuplicates() {},
-      findDuplicates: async () => ({ ok: true, groups: [] }),
+      beginDuplicates: async () => ({ ok: true, id: 'dup-1' }),
+      addDuplicateCandidates: async () => ({ ok: true }),
+      runDuplicates: async () => {
+        const res = await findDuplicates();
+        if (!res.ok) return { ok: false, error: res.error };
+        groups = res.groups;
+        return { ok: true, cancelled: false, groupCount: groups.length, chunkCount: groups.length ? 1 : 0 };
+      },
+      duplicateResultChunk: async () => ({ ok: true, groups: groups.map((g, gi) => ({ ...g, gi })) }),
+      releaseDuplicates: async () => {},
       getThumbnail: async () => null,
       deleteItems: async () => ({ deleted: [] }),
       ...over,

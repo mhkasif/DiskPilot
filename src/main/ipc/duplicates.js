@@ -2,8 +2,14 @@
 const fs = require('fs');
 const crypto = require('crypto');
 const { ipcMain, nativeImage } = require('electron');
+const { stateFor, existingState } = require('../senderState');
+const { CHUNK_SIZE, packItems } = require('../treeTransfer');
 
-let activeDuplicateScan = null;
+// A duplicate search lives in the calling window's state (senderState.dup), so no IPC message
+// carries all paths or all result groups: candidates arrive in chunks (dup:addCandidates) and the
+// result groups are pulled in chunks (dup:resultChunk).
+//   dup = { id, phase: 'upload' | 'running' | 'done', ctrl, sizes, chunks }
+let dupCounter = 0;
 
 function hashStream(filePath, maxBytes = null) {
   return new Promise((resolve, reject) => {
@@ -17,10 +23,7 @@ function hashStream(filePath, maxBytes = null) {
   });
 }
 
-async function findDuplicatesInternal(multiFileGroups, sender) {
-  const ctrl = { cancelled: false };
-  activeDuplicateScan = ctrl;
-
+async function findDuplicatesInternal(multiFileGroups, sender, ctrl) {
   let totalFiles = 0;
   for (const g of multiFileGroups) totalFiles += g.paths.length;
   let doneFiles = 0;
@@ -42,7 +45,7 @@ async function findDuplicatesInternal(multiFileGroups, sender) {
         // file unreadable, skip
       }
       doneFiles++;
-      if (doneFiles % 10 === 0 && sender) {
+      if (doneFiles % 10 === 0 && sender && !ctrl.cancelled) { // a cancelled run must not move a newer run's bar
         try { sender.send('dup:progress', { done: doneFiles, total: totalFiles }); } catch (_) {}
       }
       await new Promise(r => setImmediate(r));
@@ -90,22 +93,78 @@ async function findDuplicatesInternal(multiFileGroups, sender) {
     }
   }
 
-  activeDuplicateScan = null;
-  return { ok: !ctrl.cancelled, cancelled: ctrl.cancelled, groups: resultGroups };
+  return resultGroups;
 }
 
-module.exports = function registerDuplicatesIpc() {
-  ipcMain.handle('dup:find', async (event, candidates) => {
-    try {
-      return await findDuplicatesInternal(candidates || [], event.sender);
-    } catch (err) {
-      activeDuplicateScan = null;
-      return { ok: false, error: err.message, groups: [] };
-    }
+// The caller's state, if it holds run `id` in the given phase.
+function ownRun(event, id, phase) {
+  const st = existingState(event.sender);
+  return st && st.dup && st.dup.id === id && st.dup.phase === phase ? st : null;
+}
+
+function registerDuplicatesIpc() {
+  ipcMain.handle('dup:begin', (event) => {
+    const st = stateFor(event.sender);
+    if (st.dup) st.dup.ctrl.cancelled = true;
+    const id = `dup-${++dupCounter}`;
+    st.dup = { id, phase: 'upload', ctrl: { cancelled: false }, sizes: new Map(), chunks: null };
+    return { ok: true, id };
   });
 
-  ipcMain.handle('dup:cancel', () => {
-    if (activeDuplicateScan) activeDuplicateScan.cancelled = true;
+  ipcMain.handle('dup:addCandidates', (event, id, groups) => {
+    const st = ownRun(event, id, 'upload');
+    if (!st) return { ok: false, error: 'Unknown run' };
+    const valid = Array.isArray(groups) && groups.length > 0 &&
+      groups.every(g => g && Number.isFinite(g.size) && Array.isArray(g.paths) &&
+        g.paths.length > 0 && g.paths.every(p => typeof p === 'string')) &&
+      groups.reduce((n, g) => n + g.paths.length, 0) <= CHUNK_SIZE;
+    if (!valid) {
+      st.dup = null;
+      return { ok: false, error: 'Invalid chunk' };
+    }
+    for (const g of groups) {
+      const known = st.dup.sizes.get(g.size);
+      if (known) known.push(...g.paths);
+      else st.dup.sizes.set(g.size, [...g.paths]);
+    }
+    return { ok: true };
+  });
+
+  ipcMain.handle('dup:run', async (event, id) => {
+    const st = ownRun(event, id, 'upload');
+    if (!st) return { ok: false, error: 'Unknown run' };
+    const dup = st.dup;
+    dup.phase = 'running';
+    const candidates = Array.from(dup.sizes, ([size, paths]) => ({ size, paths }));
+    dup.sizes = null;
+    const groups = await findDuplicatesInternal(candidates, event.sender, dup.ctrl);
+    if (dup.ctrl.cancelled) {
+      if (st.dup === dup) st.dup = null; // not when a newer run replaced it
+      return { ok: false, cancelled: true };
+    }
+    dup.chunks = packItems(groups, 'files');
+    dup.phase = 'done';
+    return { ok: true, cancelled: false, groupCount: groups.length, chunkCount: dup.chunks.length };
+  });
+
+  ipcMain.handle('dup:resultChunk', (event, id, index) => {
+    const st = ownRun(event, id, 'done');
+    if (!st) return { ok: false, error: 'Result is no longer available' };
+    const chunk = Number.isInteger(index) ? st.dup.chunks[index] : undefined;
+    if (!chunk) return { ok: false, error: 'Invalid chunk index' };
+    return { ok: true, groups: chunk };
+  });
+
+  ipcMain.handle('dup:release', (event, id) => {
+    const st = existingState(event.sender);
+    if (!st || !st.dup || st.dup.id !== id) return;
+    st.dup.ctrl.cancelled = true; // also stops a run that is still hashing
+    st.dup = null;
+  });
+
+  ipcMain.handle('dup:cancel', (event) => {
+    const st = existingState(event.sender);
+    if (st && st.dup) st.dup.ctrl.cancelled = true;
   });
 
   ipcMain.handle('dup:thumbnail', async (_, filePath) => {
@@ -117,4 +176,6 @@ module.exports = function registerDuplicatesIpc() {
       return '';
     }
   });
-};
+}
+
+module.exports = registerDuplicatesIpc;
