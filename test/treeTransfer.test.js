@@ -203,6 +203,25 @@ function flatCount(root) {
   return c;
 }
 
+// ── countNodes ───────────────────────────────────────────────────────────────
+for (const [label, get] of [['main', () => main], ['renderer', () => renderer]]) {
+  test(`countNodes (${label}): null root is 0, single node 1, nested counts every node`, () => {
+    const { countNodes } = get();
+    assert.equal(countNodes(null), 0);
+    assert.equal(countNodes(undefined), 0);
+    assert.equal(countNodes(file('a', 1)), 1);
+    assert.equal(countNodes(dir('e', [])), 1);
+    assert.equal(countNodes(dir('r', [file('a', 1), dir('s', [file('b', 2), dir('t', [])])])), 5);
+  });
+
+  test(`countNodes (${label}): a very deep tree does not overflow the stack`, () => {
+    const { countNodes } = get();
+    let root = dir('leaf', []);
+    for (let i = 0; i < 50000; i++) root = dir(`d${i}`, [root]);
+    assert.equal(countNodes(root), 50001);
+  });
+}
+
 // ── both copies are the same code ────────────────────────────────────────────
 test('main and renderer copies have identical logic', () => {
   const norm = (p) => fs.readFileSync(p, 'utf8')

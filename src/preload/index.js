@@ -44,6 +44,8 @@ contextBridge.exposeInMainWorld('dt', {
   saveSnapshotAbort : (uploadId) => ipcRenderer.invoke('snapshot:saveAbort', uploadId),
   listSnapshots : () => ipcRenderer.invoke('snapshot:list'),
   loadSnapshot  : (id) => ipcRenderer.invoke('snapshot:load', id),
+  loadSnapshotChunk  : (loadId, index) => ipcRenderer.invoke('snapshot:loadChunk', loadId, index),
+  loadSnapshotRelease: (loadId) => ipcRenderer.invoke('snapshot:loadRelease', loadId),
   deleteSnapshot: (id) => ipcRenderer.invoke('snapshot:delete', id),
 
   // ── IPC events ────────────────────────────────────────────────────────────

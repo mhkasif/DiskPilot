@@ -9,6 +9,23 @@ const path   = require('node:path');
 const { pathToFileURL } = require('node:url');
 
 const ROOT  = path.join(__dirname, '..');
+
+// Snapshot loads arrive in chunks (snapshot:load + loadChunk + loadRelease); serve `pick(id)`
+// ({ savedAt, tree }) through that API, one flattened tree per load.
+const { flattenTree: _flatten, sliceChunk: _slice, chunkCount: _chunks } = require(path.join(ROOT, 'src/main/treeTransfer.js'));
+function mockSnapshotLoads(pick) {
+  const loads = new Map();
+  let n = 0;
+  globalThis.window.dt.loadSnapshot = async (id) => {
+    const d = pick(id);
+    const flat = _flatten(d.tree);
+    const loadId = `ld-${++n}`;
+    loads.set(loadId, flat);
+    return { ok: true, meta: { id, rootPath: d.rootPath, savedAt: d.savedAt }, nodeCount: flat.nodes.length, chunkCount: _chunks(flat.nodes.length), loadId };
+  };
+  globalThis.window.dt.loadSnapshotChunk = async (loadId, i) => ({ ok: true, ..._slice(loads.get(loadId), i) });
+  globalThis.window.dt.loadSnapshotRelease = async (loadId) => { loads.delete(loadId); };
+}
 const JS    = pathToFileURL(path.join(ROOT, 'src/renderer/js') + '/').href;
 const STUBS = pathToFileURL(path.join(__dirname, 'stubs') + '/').href;
 
@@ -341,7 +358,7 @@ for (const h of HOSTILE) {
     reset();
     await renderSnapshotList([{ id: 'snap-1', rootPath: '/r', savedAt: 1, totalSize: 5, files: 1 }, { id: 'snap-2', rootPath: '/r', savedAt: 2, totalSize: 9, files: 2 }]);
     const treeFor = (savedAt, size) => ({ savedAt, tree: { path: '/r', name: 'r', isDir: true, size, children: [{ path: `/r/p${h}`, name: 'x', isDir: false, size }] } });
-    globalThis.window.dt.loadSnapshot = async (id) => ({ ok: true, data: id === 'snap-1' ? treeFor(1, 5) : treeFor(2, 9) });
+    mockSnapshotLoads((id) => id === 'snap-1' ? treeFor(1, 5) : treeFor(2, 9));
     for (const row of byId.get('snapshot-items').children) {
       const cb = row.querySelector('.snap-cb');
       cb.listeners.change({ target: { checked: true } });
@@ -411,7 +428,7 @@ test('snapshots: diff sizes are escaped even if fmt echoes them (layer b)', asyn
   await renderSnapshotList([{ id: 'snap-1', rootPath: '/r', savedAt: 1, totalSize: 1, files: 1 }, { id: 'snap-2', rootPath: '/r', savedAt: 2, totalSize: 2, files: 1 }]);
   const evil = { valueOf: () => 7, toString: () => '<img src=x onerror=alert(1)>' }; // > 0, prints as markup
   const mk = (savedAt, size) => ({ savedAt, tree: { path: '/r', name: 'r', isDir: true, size: 0, children: [{ path: '/r/f', name: 'f', isDir: false, size }] } });
-  globalThis.window.dt.loadSnapshot = async (id) => ({ ok: true, data: id === 'snap-1' ? mk(1, evil) : mk(2, 9) });
+  mockSnapshotLoads((id) => id === 'snap-1' ? mk(1, evil) : mk(2, 9));
   for (const row of byId.get('snapshot-items').children) row.querySelector('.snap-cb').listeners.change({ target: { checked: true } });
   await byId.get('snap-btn-compare').listeners.click();
   await tick();
@@ -419,7 +436,7 @@ test('snapshots: diff sizes are escaped even if fmt echoes them (layer b)', asyn
   assert.ok(out.includes('&lt;img src=x onerror=alert(1)&gt;'), 'sizeA shown literally');
   assert.ok(!/<img/i.test(out));
   // and sizeB
-  globalThis.window.dt.loadSnapshot = async (id) => ({ ok: true, data: id === 'snap-1' ? mk(1, 9) : mk(2, evil) });
+  mockSnapshotLoads((id) => id === 'snap-1' ? mk(1, 9) : mk(2, evil));
   await byId.get('snap-btn-compare').listeners.click();
   await tick();
   const out2 = byId.get('diff-results-card').innerHTML;
