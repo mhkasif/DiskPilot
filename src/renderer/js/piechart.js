@@ -1,10 +1,10 @@
 import { S } from './state.js';
 import { el } from './elements.js';
 import { fmt } from './format.js';
+import { resolveChain, setViewPath, buildBreadcrumb, chartContextMenu } from './chartNav.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let _root   = null;
-let _crumbs = [];
+let _root = null;   // node currently displayed (resolved from S.viewPath on every render)
 
 const COLORS = [
   ['#ef4444', '#f97316'],
@@ -24,58 +24,28 @@ export function setupPiechart() {
   }).observe(el.treemapContainer);
 }
 
-export function initPiechart() {
-  _root   = null;
-  _crumbs = [];
-}
-
 export function renderPiechart() {
   if (!S.tree) return;
-  if (!_root) _drillTo(S.tree);
-  else        _render();
+  _render();
+  _buildBreadcrumb();
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function _drillTo(node) {
-  _crumbs.push(node);
-  _root = node;
-  _render();
-  _buildBreadcrumb();
-}
-
-function _crumbTo(idx) {
-  _crumbs = _crumbs.slice(0, idx + 1);
-  _root   = _crumbs[_crumbs.length - 1];
-  _render();
-  _buildBreadcrumb();
+  setViewPath(node.path);
+  renderPiechart();
 }
 
 function _buildBreadcrumb() {
-  el.chartBreadcrumb.innerHTML = '';
-  _crumbs.forEach((node, i) => {
-    const span  = document.createElement('span');
-    const label = (i === 0 && !node.name) ? node.path : node.name;
-    span.textContent = label;
-    if (i < _crumbs.length - 1) {
-      span.className = 'crumb';
-      span.addEventListener('click', () => _crumbTo(i));
-    } else {
-      span.className = 'crumb current';
-    }
-    el.chartBreadcrumb.appendChild(span);
-    if (i < _crumbs.length - 1) {
-      const sep = document.createElement('span');
-      sep.className   = 'crumb-sep';
-      sep.textContent = ' ›';
-      el.chartBreadcrumb.appendChild(sep);
-    }
-  });
+  buildBreadcrumb(el.chartBreadcrumb, resolveChain(), _drillTo);
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
 function _render() {
   const container = el.treemapContainer;
   container.innerHTML = '';
+  const chain = resolveChain();
+  _root = chain.length ? chain[chain.length - 1] : null;
   if (!_root) return;
 
   const all = (_root.children || []).filter(n => n.size > 0).sort((a, b) => b.size - a.size);
@@ -165,6 +135,8 @@ function _render() {
       path.addEventListener('mouseleave', () => { path.style.opacity = '1'; });
     }
 
+    path.addEventListener('contextmenu', e => chartContextMenu(e, seg));
+
     svg.appendChild(path);
     startAngle = endAngle;
   });
@@ -199,6 +171,7 @@ function _render() {
     const item = document.createElement('div');
     item.className = canDrill ? 'pc-legend-item pc-clickable' : 'pc-legend-item';
     if (canDrill) item.addEventListener('click', () => _drillTo(seg));
+    item.addEventListener('contextmenu', e => chartContextMenu(e, seg));
 
     const dot = document.createElement('span');
     dot.className = 'pc-dot';

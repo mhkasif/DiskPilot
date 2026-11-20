@@ -3,6 +3,7 @@ import { el } from './elements.js';
 import { navRows, expandSel, collapseSel, doToggle } from './tree.js';
 import { hideCtx } from './contextMenu.js';
 import { deleteSelected } from './fileops.js';
+import { isChartView } from './chartNav.js';
 
 export function setupKeyboard() {
   document.addEventListener('keydown', e => {
@@ -29,7 +30,7 @@ export function setupKeyboard() {
         break;
       }
       case 'Delete':
-      case 'Backspace': if (S.selectedSet.size && !e.metaKey) deleteSelected(); break;
+      case 'Backspace': if (S.selectedSet.size && !e.metaKey && !isChartView()) deleteSelected(); break;
       case 'Escape': hideCtx(); break;
     }
   });

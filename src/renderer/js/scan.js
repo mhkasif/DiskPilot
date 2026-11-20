@@ -3,6 +3,7 @@ import { el } from './elements.js';
 import { fmt } from './format.js';
 import { updateStatusBar } from './statusBar.js';
 import { rebuildRows, VS } from './tree.js';
+import { startScanView } from './chartNav.js';
 import { rebuildTree, countNodes } from './treeTransfer.js';
 
 // ── State visibility ──────────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ export async function triggerScan(dirPath) {
   const p = (dirPath || el.pathInput.value.trim()).replace(/\/+$/, '');
   if (!p) { flashInput(); return; }
 
+  startScanView(p);   // chart folder: kept for a rescan of the same root, reset for a new root
   S.rootPath = p;
   S.selected = null;
   S.selectedSet.clear();

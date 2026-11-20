@@ -1,10 +1,10 @@
 import { S } from './state.js';
 import { el } from './elements.js';
 import { fmt } from './format.js';
+import { resolveChain, setViewPath, buildBreadcrumb, chartContextMenu } from './chartNav.js';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let _root   = null;
-let _crumbs = [];
+let _root = null;   // node currently displayed (resolved from S.viewPath on every render)
 
 // ── Public API ────────────────────────────────────────────────────────────────
 export function setupBarchart() {
@@ -13,58 +13,28 @@ export function setupBarchart() {
   }).observe(el.treemapContainer);
 }
 
-export function initBarchart() {
-  _root   = null;
-  _crumbs = [];
-}
-
 export function renderBarchart() {
   if (!S.tree) return;
-  if (!_root) _drillTo(S.tree);
-  else        _render();
+  _render();
+  _buildBreadcrumb();
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function _drillTo(node) {
-  _crumbs.push(node);
-  _root = node;
-  _render();
-  _buildBreadcrumb();
-}
-
-function _crumbTo(idx) {
-  _crumbs = _crumbs.slice(0, idx + 1);
-  _root   = _crumbs[_crumbs.length - 1];
-  _render();
-  _buildBreadcrumb();
+  setViewPath(node.path);
+  renderBarchart();
 }
 
 function _buildBreadcrumb() {
-  el.chartBreadcrumb.innerHTML = '';
-  _crumbs.forEach((node, i) => {
-    const span  = document.createElement('span');
-    const label = (i === 0 && !node.name) ? node.path : node.name;
-    span.textContent = label;
-    if (i < _crumbs.length - 1) {
-      span.className = 'crumb';
-      span.addEventListener('click', () => _crumbTo(i));
-    } else {
-      span.className = 'crumb current';
-    }
-    el.chartBreadcrumb.appendChild(span);
-    if (i < _crumbs.length - 1) {
-      const sep = document.createElement('span');
-      sep.className   = 'crumb-sep';
-      sep.textContent = ' ›';
-      el.chartBreadcrumb.appendChild(sep);
-    }
-  });
+  buildBreadcrumb(el.chartBreadcrumb, resolveChain(), _drillTo);
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
 function _render() {
   const container = el.treemapContainer;
   container.innerHTML = '';
+  const chain = resolveChain();
+  _root = chain.length ? chain[chain.length - 1] : null;
   if (!_root) return;
 
   const children = (_root.children || [])
@@ -135,6 +105,7 @@ function _render() {
     row.appendChild(pctDiv);
 
     if (canDrill) row.addEventListener('click', () => _drillTo(node));
+    row.addEventListener('contextmenu', e => chartContextMenu(e, node));
     wrap.appendChild(row);
   }
 

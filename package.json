@@ -15,7 +15,7 @@
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
     "build:linux": "electron-builder --linux",
-    "test": "node --test test/ipcHandlers.test.js test/renderer.test.js test/treeTransfer.test.js test/escape.test.js test/dupMain.test.js test/dupRenderer.test.js test/dupPreload.test.js"
+    "test": "node --test test/ipcHandlers.test.js test/renderer.test.js test/treeTransfer.test.js test/escape.test.js test/dupMain.test.js test/dupRenderer.test.js test/dupPreload.test.js test/chartNav.test.js"
   },
   "build": {
     "appId": "com.diskpilot.app",
